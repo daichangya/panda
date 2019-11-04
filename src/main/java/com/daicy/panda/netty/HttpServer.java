@@ -30,7 +30,7 @@ import io.netty.handler.ssl.util.SelfSignedCertificate;
  * An HTTP server that sends back the content of the received HTTP request
  * in a pretty plaintext form.
  */
-public final class HttpSnoopServer {
+public final class HttpServer {
 
     static final boolean SSL = System.getProperty("ssl") != null;
     static final int PORT = Integer.parseInt(System.getProperty("port", SSL? "8443" : "8080"));
@@ -53,7 +53,7 @@ public final class HttpSnoopServer {
             b.group(bossGroup, workerGroup)
              .channel(NioServerSocketChannel.class)
              .handler(new LoggingHandler(LogLevel.INFO))
-             .childHandler(new HttpSnoopServerInitializer(sslCtx));
+             .childHandler(new HttpServerInitializer(sslCtx));
 
             Channel ch = b.bind(PORT).sync().channel();
 

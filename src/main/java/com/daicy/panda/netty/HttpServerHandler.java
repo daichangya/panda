@@ -39,7 +39,7 @@ import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static io.netty.handler.codec.http.HttpVersion.*;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
-public class HttpSnoopServerHandler extends SimpleChannelInboundHandler<Object> {
+public class HttpServerHandler extends SimpleChannelInboundHandler<Object> {
 
     private HttpRequest request;
     /** Buffer that stores the response content */
