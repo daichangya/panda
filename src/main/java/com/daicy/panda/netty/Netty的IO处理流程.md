@@ -50,3 +50,5 @@ HttpServerHandler->ChannelHandlerContext(HttpServerHandler).write(response)->
 next[ChannelHandlerContext(HttpResponseEncoder)].invokeWrite(m, promise)->((ChannelOutboundHandler) handler[HttpResponseEncoder]()).write(this, msg, promise)
 ->HeadContext.write(this, msg, promise)
 
+HttpServerCodec= HttpRequestDecoder+HttpResponseEncoder
+
