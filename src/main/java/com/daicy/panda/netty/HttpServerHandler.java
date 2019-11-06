@@ -41,7 +41,7 @@ import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 public class HttpServerHandler extends SimpleChannelInboundHandler<Object> {
 
-    private HttpRequest request;
+    private FullHttpRequest request;
     /** Buffer that stores the response content */
     private final StringBuilder buf = new StringBuilder();
 
@@ -52,8 +52,8 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<Object> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Object msg) {
-        if (msg instanceof HttpRequest) {
-            HttpRequest request = this.request = (HttpRequest) msg;
+        if (msg instanceof FullHttpRequest) {
+            FullHttpRequest request = this.request = (FullHttpRequest) msg;
 
             if (HttpUtil.is100ContinueExpected(request)) {
                 send100Continue(ctx);
@@ -91,12 +91,8 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<Object> {
             }
 
             appendDecoderResult(buf, request);
-        }
 
-        if (msg instanceof HttpContent) {
-            HttpContent httpContent = (HttpContent) msg;
-
-            ByteBuf content = httpContent.content();
+            ByteBuf content = request.content();
             if (content.isReadable()) {
                 buf.append("CONTENT: ");
                 buf.append(content.toString(CharsetUtil.UTF_8));

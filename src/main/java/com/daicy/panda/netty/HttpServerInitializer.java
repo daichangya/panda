@@ -18,10 +18,12 @@ package com.daicy.panda.netty;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
+import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpRequestDecoder;
 import io.netty.handler.codec.http.HttpResponseEncoder;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.ssl.SslContext;
+import io.netty.handler.stream.ChunkedWriteHandler;
 
 public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
 
@@ -33,16 +35,19 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
 
     @Override
     public void initChannel(SocketChannel ch) {
-        ChannelPipeline p = ch.pipeline();
+        ChannelPipeline pipeline = ch.pipeline();
         if (sslCtx != null) {
-            p.addLast(sslCtx.newHandler(ch.alloc()));
+            pipeline.addLast(sslCtx.newHandler(ch.alloc()));
         }
-        p.addLast(new HttpServerCodec());
+        pipeline.addLast(new HttpServerCodec());
         // Uncomment the following line if you don't want to handle HttpChunks.
-        //p.addLast(new HttpObjectAggregator(1048576));
-//        p.addLast(new HttpResponseEncoder());
+        pipeline.addLast(new HttpObjectAggregator(65536));
+        pipeline.addLast(new ChunkedWriteHandler());
+        pipeline.addLast(new HttpStaticFileServerHandler());
+
+//        pipeline.addLast(new HttpResponseEncoder());
         // Remove the following line if you don't want automatic content compression.
-        //p.addLast(new HttpContentCompressor());
-        p.addLast(new HttpServerHandler());
+        //pipeline.addLast(new HttpContentCompressor());
+        pipeline.addLast(new HttpServerHandler());
     }
 }

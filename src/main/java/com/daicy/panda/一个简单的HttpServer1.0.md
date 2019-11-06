@@ -230,3 +230,40 @@ Content-Type: text/html
 </body>
 </html>
 ```
+
+压测报告1(直接返回字符串)
+```
+daichangya@daichangya:~$ wrk -t8 -c100 -d10s --latency   http://localhost:8080
+Running 10s test @ http://localhost:8080
+  8 threads and 100 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     7.77ms   77.05ms   1.66s    98.36%
+    Req/Sec     9.56k     7.36k   24.76k    59.44%
+  Latency Distribution
+     50%   33.00us
+     75%   45.00us
+     90%   58.00us
+     99%  223.01ms
+  302653 requests in 10.04s, 28.57MB read
+  Socket errors: connect 0, read 302653, write 0, timeout 7
+Requests/sec:  30157.25
+Transfer/sec:      2.85MB
+```
+压测报告2(读取静态文件)
+```
+daichangya@daichangya:~$ wrk -t8 -c100 -d10s --latency   http://localhost:8080/go.html
+Running 10s test @ http://localhost:8080/go.html
+  8 threads and 100 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     6.87ms   75.86ms   1.66s    98.72%
+    Req/Sec     2.62k     3.13k    7.85k    70.27%
+  Latency Distribution
+     50%   75.00us
+     75%   94.00us
+     90%  116.00us
+     99%  172.98ms
+  21393 requests in 10.01s, 3.53MB read
+  Socket errors: connect 0, read 21393, write 0, timeout 0
+Requests/sec:   2136.35
+Transfer/sec:    360.93KB
+```

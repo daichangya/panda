@@ -38,17 +38,12 @@ public class Response {
         FileInputStream fis = null;
         byte[] bytes = new byte[BUFFER_SIZE];
         try {
-            String uri = request.getUri();
-            if (StringUtils.equals("/", request.getUri())) {
-                uri = HttpServer.INDEX;
-            }
-            URL url = Resources.getResource(HttpServer.WEB_ROOT + uri);
-            fis = new FileInputStream(url.getFile());
-            int ch = fis.read(bytes, 0, BUFFER_SIZE);
-            while (ch != -1) {
-                output.write(bytes, 0, ch);
-                ch = fis.read(bytes, 0, BUFFER_SIZE);
-            }
+            String errorMessage = "HTTP/1.1 200 File Not Found\r\n" +
+                    "Content-Type: text/html\r\n" +
+                    "Content-Length: 23\r\n" +
+                    "\r\n" +
+                    "<h1>File Not Found</h1>";
+            output.write(errorMessage.getBytes());
         } catch (Exception e) {
             // file not found
             String errorMessage = "HTTP/1.1 404 File Not Found\r\n" +

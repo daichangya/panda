@@ -1,6 +1,7 @@
 package com.daicy.panda;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.IOUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -57,14 +58,17 @@ public class HttpServer {
                 response.setRequest(request);
                 response.sendStaticResource();
 
-                // Close the socket
-                socket.close();
 
                 //check if the previous URI is a shutdown command
                 shutdown = request.getUri().equals(SHUTDOWN_COMMAND);
             } catch (Exception e) {
                 log.error("http handle error", e);
                 continue;
+            }finally {
+                // Close the socket
+                IOUtils.closeQuietly(input);
+                IOUtils.closeQuietly(output);
+                IOUtils.closeQuietly(socket);
             }
         }
     }

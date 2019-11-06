@@ -36,6 +36,7 @@ public final class HttpServer {
     static final int PORT = Integer.parseInt(System.getProperty("port", SSL? "8443" : "8080"));
 
     public static void main(String[] args) throws Exception {
+        System.setProperty("webroot","static");
         // Configure SSL.
         final SslContext sslCtx;
         if (SSL) {
