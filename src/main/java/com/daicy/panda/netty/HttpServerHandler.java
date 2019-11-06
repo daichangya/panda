@@ -15,6 +15,9 @@
  */
 package com.daicy.panda.netty;
 
+import com.daicy.panda.method.BeanContainer;
+import com.daicy.panda.method.HandlerMethod;
+import com.daicy.panda.method.RequestMappingHandlerMapping;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
@@ -26,7 +29,9 @@ import io.netty.handler.codec.http.cookie.Cookie;
 import io.netty.handler.codec.http.cookie.ServerCookieDecoder;
 import io.netty.handler.codec.http.cookie.ServerCookieEncoder;
 import io.netty.util.CharsetUtil;
+import lombok.extern.slf4j.Slf4j;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -39,6 +44,7 @@ import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static io.netty.handler.codec.http.HttpVersion.*;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
+@Slf4j
 public class HttpServerHandler extends SimpleChannelInboundHandler<Object> {
 
     private FullHttpRequest request;
@@ -54,72 +60,73 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<Object> {
     protected void channelRead0(ChannelHandlerContext ctx, Object msg) {
         if (msg instanceof FullHttpRequest) {
             FullHttpRequest request = this.request = (FullHttpRequest) msg;
-
             if (HttpUtil.is100ContinueExpected(request)) {
                 send100Continue(ctx);
             }
 
-            buf.setLength(0);
-            buf.append("WELCOME TO THE WILD WILD WEB SERVER\r\n");
-            buf.append("===================================\r\n");
-
-            buf.append("VERSION: ").append(request.protocolVersion()).append("\r\n");
-            buf.append("HOSTNAME: ").append(request.headers().get(HttpHeaderNames.HOST, "unknown")).append("\r\n");
-            buf.append("REQUEST_URI: ").append(request.uri()).append("\r\n\r\n");
-
-            HttpHeaders headers = request.headers();
-            if (!headers.isEmpty()) {
-                for (Entry<String, String> h: headers) {
-                    CharSequence key = h.getKey();
-                    CharSequence value = h.getValue();
-                    buf.append("HEADER: ").append(key).append(" = ").append(value).append("\r\n");
+            String uri = request.uri();
+            HandlerMethod handlerMethod = RequestMappingHandlerMapping.getInstance().get(uri);
+            if(null != handlerMethod){
+                Object bean = BeanContainer.getInstance().getBean(handlerMethod.getClazz());
+                try {
+                  String result = (String) handlerMethod.getMethod().invoke(bean,null);
+                  buf.append(result);
+                } catch (IllegalAccessException e) {
+                    log.error("controller invoke uri:{}",uri,e);
+                } catch (InvocationTargetException e) {
+                    log.error("controller invoke uri:{}",uri,e);
                 }
-                buf.append("\r\n");
+            }else {
+                requestToStr(request);
             }
 
-            QueryStringDecoder queryStringDecoder = new QueryStringDecoder(request.uri());
-            Map<String, List<String>> params = queryStringDecoder.parameters();
-            if (!params.isEmpty()) {
-                for (Entry<String, List<String>> p: params.entrySet()) {
-                    String key = p.getKey();
-                    List<String> vals = p.getValue();
-                    for (String val : vals) {
-                        buf.append("PARAM: ").append(key).append(" = ").append(val).append("\r\n");
-                    }
-                }
-                buf.append("\r\n");
+            if (!writeResponse(request, ctx)) {
+                // If keep-alive is off, close the connection once the content is fully written.
+                ctx.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
             }
+        }
+    }
 
+    private void requestToStr(FullHttpRequest request) {
+        buf.setLength(0);
+        buf.append("WELCOME TO THE WILD WILD WEB SERVER\r\n");
+        buf.append("===================================\r\n");
+
+        buf.append("VERSION: ").append(request.protocolVersion()).append("\r\n");
+        buf.append("HOSTNAME: ").append(request.headers().get(HttpHeaderNames.HOST, "unknown")).append("\r\n");
+        buf.append("REQUEST_URI: ").append(request.uri()).append("\r\n\r\n");
+
+        HttpHeaders headers = request.headers();
+        if (!headers.isEmpty()) {
+            for (Entry<String, String> h: headers) {
+                CharSequence key = h.getKey();
+                CharSequence value = h.getValue();
+                buf.append("HEADER: ").append(key).append(" = ").append(value).append("\r\n");
+            }
+            buf.append("\r\n");
+        }
+
+        QueryStringDecoder queryStringDecoder = new QueryStringDecoder(request.uri());
+        Map<String, List<String>> params = queryStringDecoder.parameters();
+        if (!params.isEmpty()) {
+            for (Entry<String, List<String>> p: params.entrySet()) {
+                String key = p.getKey();
+                List<String> vals = p.getValue();
+                for (String val : vals) {
+                    buf.append("PARAM: ").append(key).append(" = ").append(val).append("\r\n");
+                }
+            }
+            buf.append("\r\n");
+        }
+
+        appendDecoderResult(buf, request);
+
+        ByteBuf content = request.content();
+        if (content.isReadable()) {
+            buf.append("CONTENT: ");
+            buf.append(content.toString(CharsetUtil.UTF_8));
+            buf.append("\r\n");
             appendDecoderResult(buf, request);
-
-            ByteBuf content = request.content();
-            if (content.isReadable()) {
-                buf.append("CONTENT: ");
-                buf.append(content.toString(CharsetUtil.UTF_8));
-                buf.append("\r\n");
-                appendDecoderResult(buf, request);
-            }
-
-            if (msg instanceof LastHttpContent) {
-                buf.append("END OF CONTENT\r\n");
-
-                LastHttpContent trailer = (LastHttpContent) msg;
-                if (!trailer.trailingHeaders().isEmpty()) {
-                    buf.append("\r\n");
-                    for (CharSequence name: trailer.trailingHeaders().names()) {
-                        for (CharSequence value: trailer.trailingHeaders().getAll(name)) {
-                            buf.append("TRAILING HEADER: ");
-                            buf.append(name).append(" = ").append(value).append("\r\n");
-                        }
-                    }
-                    buf.append("\r\n");
-                }
-
-                if (!writeResponse(trailer, ctx)) {
-                    // If keep-alive is off, close the connection once the content is fully written.
-                    ctx.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
-                }
-            }
         }
     }
 

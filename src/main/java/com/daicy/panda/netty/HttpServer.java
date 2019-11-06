@@ -15,6 +15,8 @@
  */
 package com.daicy.panda.netty;
 
+import com.daicy.panda.controller.AdminController;
+import com.daicy.panda.method.RequestMappingHandlerMapping;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.EventLoopGroup;
@@ -57,6 +59,8 @@ public final class HttpServer {
              .childHandler(new HttpServerInitializer(sslCtx));
 
             Channel ch = b.bind(PORT).sync().channel();
+
+            RequestMappingHandlerMapping.getInstance().register(AdminController.class);
 
             System.err.println("Open your web browser and navigate to " +
                     (SSL? "https" : "http") + "://127.0.0.1:" + PORT + '/');
