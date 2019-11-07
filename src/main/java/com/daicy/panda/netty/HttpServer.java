@@ -17,6 +17,7 @@ package com.daicy.panda.netty;
 
 import com.daicy.panda.controller.AdminController;
 import com.daicy.panda.method.RequestMappingHandlerMapping;
+import com.daicy.panda.util.SpringAppContextUtil;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.EventLoopGroup;
@@ -27,6 +28,8 @@ import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 /**
  * An HTTP server that sends back the content of the received HTTP request
@@ -38,6 +41,10 @@ public final class HttpServer {
     static final int PORT = Integer.parseInt(System.getProperty("port", SSL? "8443" : "8080"));
 
     public static void main(String[] args) throws Exception {
+        // create and configure beans
+        ApplicationContext context = new ClassPathXmlApplicationContext("services.xml");
+        SpringAppContextUtil.setApplicationContextHolder(context);
+
         System.setProperty("webroot","static");
         // Configure SSL.
         final SslContext sslCtx;

@@ -19,7 +19,7 @@ public class AdminController {
     }
 
     @RequestMapping("/go")
-    public String go() {
-        return "go go!";
+    public String go(String aa,Integer bb) {
+        return aa + "go go!" + bb;
     }
 }

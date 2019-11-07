@@ -15,6 +15,8 @@
  */
 package com.daicy.panda.annotation;
 
+import org.springframework.stereotype.Component;
+
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
@@ -30,5 +32,6 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  */
 @Retention(RUNTIME)
 @Target({ TYPE, METHOD })
+@Component
 public @interface Controller {
 }

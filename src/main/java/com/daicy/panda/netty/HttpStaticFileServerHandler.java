@@ -23,6 +23,7 @@ import io.netty.handler.codec.http.*;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.stream.ChunkedFile;
 import io.netty.util.CharsetUtil;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.activation.MimetypesFileTypeMap;
 import java.io.File;
@@ -120,7 +121,10 @@ public class HttpStaticFileServerHandler extends ChannelInboundHandlerAdapter {
         if (path == null) {
             this.sendError(ctx, FORBIDDEN);
             return;
-        } else if (!path.endsWith(".html")) {
+        } else if(StringUtils.equals(uri,"/favicon.ico")){
+            this.sendError(ctx, FORBIDDEN);
+            return;
+        }else if (!path.endsWith(".html")) {
             ctx.fireChannelRead(request);
             return;
         }

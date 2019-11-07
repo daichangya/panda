@@ -15,9 +15,9 @@
  */
 package com.daicy.panda.netty;
 
-import com.daicy.panda.method.BeanContainer;
 import com.daicy.panda.method.HandlerMethod;
 import com.daicy.panda.method.RequestMappingHandlerMapping;
+import com.daicy.panda.util.SpringAppContextUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
@@ -30,6 +30,9 @@ import io.netty.handler.codec.http.cookie.ServerCookieDecoder;
 import io.netty.handler.codec.http.cookie.ServerCookieEncoder;
 import io.netty.util.CharsetUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.MethodParameter;
+import org.springframework.util.ObjectUtils;
+import org.springframework.validation.DataBinder;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
@@ -38,18 +41,10 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import static io.netty.handler.codec.http.HttpResponseStatus.*;
-import static io.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
-import static io.netty.handler.codec.http.HttpResponseStatus.CONTINUE;
-import static io.netty.handler.codec.http.HttpResponseStatus.OK;
-import static io.netty.handler.codec.http.HttpVersion.*;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 @Slf4j
 public class HttpServerHandler extends SimpleChannelInboundHandler<Object> {
-
-    private FullHttpRequest request;
-    /** Buffer that stores the response content */
-    private final StringBuilder buf = new StringBuilder();
 
     @Override
     public void channelReadComplete(ChannelHandlerContext ctx) {
@@ -58,36 +53,56 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<Object> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Object msg) {
+        final StringBuilder buf = new StringBuilder();
         if (msg instanceof FullHttpRequest) {
-            FullHttpRequest request = this.request = (FullHttpRequest) msg;
+            FullHttpRequest request =  (FullHttpRequest) msg;
             if (HttpUtil.is100ContinueExpected(request)) {
                 send100Continue(ctx);
             }
-
-            String uri = request.uri();
-            HandlerMethod handlerMethod = RequestMappingHandlerMapping.getInstance().get(uri);
+            QueryStringDecoder queryStringDecoder = new QueryStringDecoder(request.uri());
+            HandlerMethod handlerMethod = RequestMappingHandlerMapping.getInstance().get(queryStringDecoder.path());
             if(null != handlerMethod){
-                Object bean = BeanContainer.getInstance().getBean(handlerMethod.getClazz());
                 try {
-                  String result = (String) handlerMethod.getMethod().invoke(bean,null);
-                  buf.append(result);
+                    Object[] args = getArgs(queryStringDecoder, handlerMethod);
+                    Object bean = SpringAppContextUtil.getBean(handlerMethod.getClazz());
+                    Object result = handlerMethod.getMethod().invoke(bean,args);
+                    buf.append(result);
                 } catch (IllegalAccessException e) {
-                    log.error("controller invoke uri:{}",uri,e);
+                    log.error("controller invoke uri:{}",queryStringDecoder.path(),e);
                 } catch (InvocationTargetException e) {
-                    log.error("controller invoke uri:{}",uri,e);
+                    log.error("controller invoke uri:{}",queryStringDecoder.path(),e);
                 }
             }else {
-                requestToStr(request);
+                requestToStr(request,buf);
             }
 
-            if (!writeResponse(request, ctx)) {
+            if (!writeResponse(buf,request, ctx)) {
                 // If keep-alive is off, close the connection once the content is fully written.
                 ctx.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
             }
         }
     }
 
-    private void requestToStr(FullHttpRequest request) {
+    private Object[] getArgs(QueryStringDecoder queryStringDecoder , HandlerMethod handlerMethod) {
+        MethodParameter[] parameters = handlerMethod.getParameters();
+        if(ObjectUtils.isEmpty(parameters)){
+            return null;
+        }
+        Object[] args = new Object[parameters.length];
+        Map<String, List<String>> params = queryStringDecoder.parameters();
+        for (int i = 0; i < parameters.length; i++) {
+            List<String> paramValues = params.get(parameters[i].getParameterName());
+            Object requestArg = null;
+            if (paramValues != null) {
+                requestArg = (paramValues.size() == 1 ? paramValues.get(0) : paramValues);
+            }
+            args[i] = new DataBinder(null, parameters[i].getParameterName())
+                    .convertIfNecessary(requestArg, parameters[i].getParameterType(), parameters[i]);
+        }
+        return args;
+    }
+
+    private void requestToStr(FullHttpRequest request,StringBuilder buf) {
         buf.setLength(0);
         buf.append("WELCOME TO THE WILD WILD WEB SERVER\r\n");
         buf.append("===================================\r\n");
@@ -141,12 +156,12 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<Object> {
         buf.append("\r\n");
     }
 
-    private boolean writeResponse(HttpObject currentObj, ChannelHandlerContext ctx) {
+    private boolean writeResponse(StringBuilder buf,FullHttpRequest request, ChannelHandlerContext ctx) {
         // Decide whether to close the connection or not.
         boolean keepAlive = HttpUtil.isKeepAlive(request);
         // Build the response object.
         FullHttpResponse response = new DefaultFullHttpResponse(
-                HTTP_1_1, currentObj.decoderResult().isSuccess()? OK : BAD_REQUEST,
+                HTTP_1_1, request.decoderResult().isSuccess()? OK : BAD_REQUEST,
                 Unpooled.copiedBuffer(buf.toString(), CharsetUtil.UTF_8));
 
         response.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/plain; charset=UTF-8");
