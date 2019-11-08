@@ -15,6 +15,7 @@
  */
 package com.daicy.panda.netty;
 
+import com.daicy.panda.http.ServletRequestImpl;
 import com.daicy.panda.method.HandlerMethod;
 import com.daicy.panda.method.RequestMappingHandlerMapping;
 import com.daicy.panda.util.SpringAppContextUtil;
@@ -59,18 +60,18 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<Object> {
             if (HttpUtil.is100ContinueExpected(request)) {
                 send100Continue(ctx);
             }
-            QueryStringDecoder queryStringDecoder = new QueryStringDecoder(request.uri());
-            HandlerMethod handlerMethod = RequestMappingHandlerMapping.getInstance().get(queryStringDecoder.path());
+            ServletRequestImpl servletRequest = new ServletRequestImpl(request);
+            HandlerMethod handlerMethod = RequestMappingHandlerMapping.getInstance().get(servletRequest.getPath());
             if(null != handlerMethod){
                 try {
-                    Object[] args = getArgs(queryStringDecoder, handlerMethod);
+                    Object[] args = getArgs(servletRequest, handlerMethod);
                     Object bean = SpringAppContextUtil.getBean(handlerMethod.getClazz());
                     Object result = handlerMethod.getMethod().invoke(bean,args);
                     buf.append(result);
                 } catch (IllegalAccessException e) {
-                    log.error("controller invoke uri:{}",queryStringDecoder.path(),e);
+                    log.error("controller invoke uri:{}",request.uri(),e);
                 } catch (InvocationTargetException e) {
-                    log.error("controller invoke uri:{}",queryStringDecoder.path(),e);
+                    log.error("controller invoke uri:{}",request.uri(),e);
                 }
             }else {
                 requestToStr(request,buf);
@@ -83,20 +84,20 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<Object> {
         }
     }
 
-    private Object[] getArgs(QueryStringDecoder queryStringDecoder , HandlerMethod handlerMethod) {
+    private Object[] getArgs(ServletRequestImpl servletRequest, HandlerMethod handlerMethod) {
         MethodParameter[] parameters = handlerMethod.getParameters();
         if(ObjectUtils.isEmpty(parameters)){
             return null;
         }
         Object[] args = new Object[parameters.length];
-        Map<String, List<String>> params = queryStringDecoder.parameters();
         for (int i = 0; i < parameters.length; i++) {
-            List<String> paramValues = params.get(parameters[i].getParameterName());
+            String parameterName = parameters[i].getParameterName();
+            String[] paramValues = servletRequest.getParameterValues(parameterName);
             Object requestArg = null;
             if (paramValues != null) {
-                requestArg = (paramValues.size() == 1 ? paramValues.get(0) : paramValues);
+                requestArg = (paramValues.length == 1 ? paramValues[0] : paramValues);
             }
-            args[i] = new DataBinder(null, parameters[i].getParameterName())
+            args[i] = new DataBinder(null, parameterName)
                     .convertIfNecessary(requestArg, parameters[i].getParameterType(), parameters[i]);
         }
         return args;

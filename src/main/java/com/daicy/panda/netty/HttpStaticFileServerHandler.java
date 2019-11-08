@@ -110,11 +110,6 @@ public class HttpStaticFileServerHandler extends ChannelInboundHandlerAdapter {
             return;
         }
 
-        if (!GET.equals(request.method())) {
-            this.sendError(ctx, METHOD_NOT_ALLOWED);
-            return;
-        }
-
         final boolean keepAlive = HttpUtil.isKeepAlive(request);
         final String uri = request.uri();
         final String path = System.getProperty("webroot") + uri;
@@ -126,6 +121,11 @@ public class HttpStaticFileServerHandler extends ChannelInboundHandlerAdapter {
             return;
         }else if (!path.endsWith(".html")) {
             ctx.fireChannelRead(request);
+            return;
+        }
+
+        if (!GET.equals(request.method())) {
+            this.sendError(ctx, METHOD_NOT_ALLOWED);
             return;
         }
 
