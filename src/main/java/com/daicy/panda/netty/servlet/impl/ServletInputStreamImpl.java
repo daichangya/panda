@@ -21,6 +21,7 @@ import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpRequest;
 
+import javax.servlet.ReadListener;
 import javax.servlet.ServletInputStream;
 import java.io.IOException;
 
@@ -58,4 +59,18 @@ public class ServletInputStreamImpl extends ServletInputStream {
         return this.in.read(buf, offset, len);
     }
 
+    @Override
+    public boolean isFinished() {
+        return false;
+    }
+
+    @Override
+    public boolean isReady() {
+        return true;
+    }
+
+    @Override
+    public void setReadListener(ReadListener readListener) {
+
+    }
 }

@@ -15,7 +15,8 @@
  */
 package com.daicy.panda.netty;
 
-import com.daicy.panda.http.ServletRequestImpl;
+import com.daicy.panda.netty.servlet.ChannelThreadLocal;
+import com.daicy.panda.netty.servlet.impl.ServletRequestImpl;
 import com.daicy.panda.method.HandlerMethod;
 import com.daicy.panda.method.RequestMappingHandlerMapping;
 import com.daicy.panda.util.SpringAppContextUtil;
@@ -54,34 +55,40 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<Object> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Object msg) {
-        final StringBuilder buf = new StringBuilder();
-        if (msg instanceof FullHttpRequest) {
-            FullHttpRequest request =  (FullHttpRequest) msg;
-            if (HttpUtil.is100ContinueExpected(request)) {
-                send100Continue(ctx);
-            }
-            ServletRequestImpl servletRequest = new ServletRequestImpl(request);
-            HandlerMethod handlerMethod = RequestMappingHandlerMapping.getInstance().get(servletRequest.getPath());
-            if(null != handlerMethod){
-                try {
-                    Object[] args = getArgs(servletRequest, handlerMethod);
-                    Object bean = SpringAppContextUtil.getBean(handlerMethod.getClazz());
-                    Object result = handlerMethod.getMethod().invoke(bean,args);
-                    buf.append(result);
-                } catch (IllegalAccessException e) {
-                    log.error("controller invoke uri:{}",request.uri(),e);
-                } catch (InvocationTargetException e) {
-                    log.error("controller invoke uri:{}",request.uri(),e);
+        try {
+            ChannelThreadLocal.set(ctx.channel());
+            final StringBuilder buf = new StringBuilder();
+            if (msg instanceof FullHttpRequest) {
+                FullHttpRequest request =  (FullHttpRequest) msg;
+                if (HttpUtil.is100ContinueExpected(request)) {
+                    send100Continue(ctx);
                 }
-            }else {
-                requestToStr(request,buf);
-            }
+                ServletRequestImpl servletRequest = new ServletRequestImpl(request);
+                HandlerMethod handlerMethod = RequestMappingHandlerMapping.getInstance().get(servletRequest.getPath());
+                if(null != handlerMethod){
+                    try {
+                        Object[] args = getArgs(servletRequest, handlerMethod);
+                        Object bean = SpringAppContextUtil.getBean(handlerMethod.getClazz());
+                        Object result = handlerMethod.getMethod().invoke(bean,args);
+                        buf.append(result);
+                    } catch (IllegalAccessException e) {
+                        log.error("controller invoke uri:{}",request.uri(),e);
+                    } catch (InvocationTargetException e) {
+                        log.error("controller invoke uri:{}",request.uri(),e);
+                    }
+                }else {
+                    requestToStr(request,buf);
+                }
 
-            if (!writeResponse(buf,request, ctx)) {
-                // If keep-alive is off, close the connection once the content is fully written.
-                ctx.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
+                if (!writeResponse(buf,request, ctx)) {
+                    // If keep-alive is off, close the connection once the content is fully written.
+                    ctx.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
+                }
             }
+        }finally {
+            ChannelThreadLocal.unset();
         }
+
     }
 
     private Object[] getArgs(ServletRequestImpl servletRequest, HandlerMethod handlerMethod) {

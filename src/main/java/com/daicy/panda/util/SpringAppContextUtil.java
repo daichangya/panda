@@ -1,6 +1,7 @@
 package com.daicy.panda.util;
 
 import org.springframework.context.ApplicationContext;
+import org.springframework.web.servlet.DispatcherServlet;
 
 import java.util.Map;
 
@@ -13,8 +14,11 @@ public class SpringAppContextUtil {
 
     private static ApplicationContext applicationContextHolder;
 
+    private static DispatcherServlet dispatcherServlet;
+
     public static void setApplicationContextHolder(ApplicationContext context) {
         applicationContextHolder = context;
+        dispatcherServlet = new DispatcherServlet();
     }
 
     public static <T> T getBean(Class<T> t) {
@@ -39,5 +43,9 @@ public class SpringAppContextUtil {
             handle=getBean(tClass);
         }
         return handle;
+    }
+
+    public static DispatcherServlet getDispatcherServlet() {
+        return dispatcherServlet;
     }
 }
