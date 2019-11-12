@@ -4,6 +4,7 @@ import com.daicy.panda.netty.servlet.impl.ServletConfigImpl;
 import com.daicy.panda.netty.servlet.impl.ServletContextImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.web.context.support.XmlWebApplicationContext;
 import org.springframework.web.servlet.DispatcherServlet;
 
@@ -18,18 +19,11 @@ import java.util.Map;
 @Slf4j
 public class SpringAppContextUtil {
 
-    private static XmlWebApplicationContext applicationContextHolder;
+    private static ApplicationContext applicationContextHolder;
 
-    private static DispatcherServlet dispatcherServlet;
 
-    public static void setApplicationContextHolder(XmlWebApplicationContext context) {
+    public static void setApplicationContextHolder(ApplicationContext context) {
         applicationContextHolder = context;
-        dispatcherServlet = new DispatcherServlet(context);
-        try {
-            dispatcherServlet.init(context.getServletConfig());
-        } catch (ServletException e) {
-            log.error("dispatcherServlet init",e);
-        }
     }
 
     public static <T> T getBean(Class<T> t) {
@@ -54,9 +48,5 @@ public class SpringAppContextUtil {
             handle=getBean(tClass);
         }
         return handle;
-    }
-
-    public static DispatcherServlet getDispatcherServlet() {
-        return dispatcherServlet;
     }
 }

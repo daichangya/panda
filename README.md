@@ -11,3 +11,6 @@
 4.0
 * 添加servlet支持
 * 对接spring web
+
+5.0
+* 集成spring boot,替换内嵌tomcat

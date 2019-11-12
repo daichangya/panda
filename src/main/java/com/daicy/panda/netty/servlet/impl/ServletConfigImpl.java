@@ -64,4 +64,10 @@ public class ServletConfigImpl implements ServletConfig {
     public void setServletContext(ServletContext servletContext) {
         this.servletContext = servletContext;
     }
+
+    public boolean setInitParameter(String name, String value) {
+        initParameters.put(name, value);
+        return true;
+    }
+
 }

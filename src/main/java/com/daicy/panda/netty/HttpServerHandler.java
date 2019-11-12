@@ -25,6 +25,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.*;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.servlet.DispatcherServlet;
 
 @Slf4j
 public class HttpServerHandler extends SimpleChannelInboundHandler<Object> {
@@ -47,7 +48,7 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<Object> {
                 ServletResponseImpl servletResponse = new ServletResponseImpl(response);
 
                 try {
-                    SpringAppContextUtil.getDispatcherServlet().service(servletRequest,servletResponse);
+                    SpringAppContextUtil.getBean(DispatcherServlet.class).service(servletRequest,servletResponse);
                 } catch (Exception e) {
                     log.error("controller invoke uri:{}",request.uri(),e);
                 }
