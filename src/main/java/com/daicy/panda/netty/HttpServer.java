@@ -15,8 +15,8 @@
  */
 package com.daicy.panda.netty;
 
-import com.daicy.panda.controller.AdminController;
-import com.daicy.panda.method.RequestMappingHandlerMapping;
+import com.daicy.panda.netty.servlet.impl.ServletConfigImpl;
+import com.daicy.panda.netty.servlet.impl.ServletContextImpl;
 import com.daicy.panda.util.SpringAppContextUtil;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
@@ -30,6 +30,7 @@ import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.web.context.support.XmlWebApplicationContext;
 
 /**
  * An HTTP server that sends back the content of the received HTTP request
@@ -42,7 +43,11 @@ public final class HttpServer {
 
     public static void main(String[] args) throws Exception {
         // create and configure beans
-        ApplicationContext context = new ClassPathXmlApplicationContext("services.xml");
+        ServletConfigImpl servletConfig = new ServletConfigImpl("dispatcherServlet");
+        servletConfig.setServletContext(new ServletContextImpl());
+        XmlWebApplicationContext context = new XmlWebApplicationContext();
+        context.setConfigLocation("classpath:/services.xml");
+        context.setServletConfig(servletConfig);
         SpringAppContextUtil.setApplicationContextHolder(context);
 
         System.setProperty("webroot","static");
@@ -66,8 +71,6 @@ public final class HttpServer {
              .childHandler(new HttpServerInitializer(sslCtx));
 
             Channel ch = b.bind(PORT).sync().channel();
-
-            RequestMappingHandlerMapping.getInstance().register(AdminController.class);
 
             System.err.println("Open your web browser and navigate to " +
                     (SSL? "https" : "http") + "://127.0.0.1:" + PORT + '/');

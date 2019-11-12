@@ -39,9 +39,9 @@ public class ServletRequestImpl implements HttpServletRequest {
 
     private final Map<String, String> headers = new HashMap<String, String>();
 
-    private Cookie[] headCookies = null;
+    private URIParser uriParser;
 
-    private String path;
+    private Cookie[] headCookies = null;
 
 
     public ServletRequestImpl(HttpRequest originalRequest) {
@@ -51,6 +51,8 @@ public class ServletRequestImpl implements HttpServletRequest {
         } else {
             this.inputStream = new ServletInputStreamImpl(originalRequest);
         }
+        this.uriParser = new URIParser();
+        this.uriParser.parse(originalRequest.getUri());
         parseParameters();
         HttpHeaders requestHeaders = this.originalRequest.headers();
         if (!requestHeaders.isEmpty()) {
@@ -72,7 +74,6 @@ public class ServletRequestImpl implements HttpServletRequest {
         HttpMethod method = originalRequest.method();
 
         QueryStringDecoder decoder = new QueryStringDecoder(originalRequest.uri());
-        path = decoder.path();
         if (HttpMethod.GET == method) {
             // 是GET请求
             parameters.putAll(decoder.parameters());
@@ -314,9 +315,6 @@ public class ServletRequestImpl implements HttpServletRequest {
         return null;
     }
 
-    public String getPath() {
-        return path;
-    }
 
     @Override
     public String getAuthType() {
@@ -384,7 +382,7 @@ public class ServletRequestImpl implements HttpServletRequest {
 
     @Override
     public String getPathInfo() {
-        return null;
+        return this.uriParser.getPathInfo();
     }
 
     @Override
@@ -394,12 +392,7 @@ public class ServletRequestImpl implements HttpServletRequest {
 
     @Override
     public String getContextPath() {
-        return null;
-    }
-
-    @Override
-    public String getQueryString() {
-        return originalRequest.uri();
+        return ServletContextImpl.get().getContextPath();
     }
 
     @Override
@@ -422,19 +415,43 @@ public class ServletRequestImpl implements HttpServletRequest {
         return null;
     }
 
+
+    @Override
+    public String getQueryString() {
+        return this.uriParser.getQueryString();
+    }
+
     @Override
     public String getRequestURI() {
-        return null;
+        return this.uriParser.getRequestUri();
     }
 
     @Override
     public StringBuffer getRequestURL() {
-        return null;
+        StringBuffer url = new StringBuffer();
+        String scheme = this.getScheme();
+        int port = this.getServerPort();
+        String urlPath = this.getRequestURI();
+
+        url.append(scheme); // http, https
+        url.append("://");
+        url.append(this.getServerName());
+        if ((scheme.equals("http") && port != 80)
+                || (scheme.equals("https") && port != 443)) {
+            url.append(':');
+            url.append(this.getServerPort());
+        }
+        url.append(urlPath);
+        return url;
     }
 
     @Override
     public String getServletPath() {
-        return null;
+        String servletPath = this.uriParser.getServletPath();
+        if (servletPath.equals("/"))
+            return "";
+
+        return servletPath;
     }
 
     @Override

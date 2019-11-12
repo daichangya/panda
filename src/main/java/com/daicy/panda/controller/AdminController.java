@@ -1,7 +1,8 @@
 package com.daicy.panda.controller;
 
-import com.daicy.panda.annotation.Controller;
-import com.daicy.panda.annotation.RequestMapping;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * @author: create by daichangya
@@ -9,7 +10,7 @@ import com.daicy.panda.annotation.RequestMapping;
  * @description: com.daicy.panda.controller
  * @date:19-11-6
  */
-@Controller
+@RestController
 @RequestMapping("/admin")
 public class AdminController {
 

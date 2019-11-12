@@ -1,8 +1,13 @@
 package com.daicy.panda.util;
 
+import com.daicy.panda.netty.servlet.impl.ServletConfigImpl;
+import com.daicy.panda.netty.servlet.impl.ServletContextImpl;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContext;
+import org.springframework.web.context.support.XmlWebApplicationContext;
 import org.springframework.web.servlet.DispatcherServlet;
 
+import javax.servlet.ServletException;
 import java.util.Map;
 
 /**
@@ -10,15 +15,21 @@ import java.util.Map;
  * 
  * @author: daicy
  */
+@Slf4j
 public class SpringAppContextUtil {
 
-    private static ApplicationContext applicationContextHolder;
+    private static XmlWebApplicationContext applicationContextHolder;
 
     private static DispatcherServlet dispatcherServlet;
 
-    public static void setApplicationContextHolder(ApplicationContext context) {
+    public static void setApplicationContextHolder(XmlWebApplicationContext context) {
         applicationContextHolder = context;
-        dispatcherServlet = new DispatcherServlet();
+        dispatcherServlet = new DispatcherServlet(context);
+        try {
+            dispatcherServlet.init(context.getServletConfig());
+        } catch (ServletException e) {
+            log.error("dispatcherServlet init",e);
+        }
     }
 
     public static <T> T getBean(Class<T> t) {
