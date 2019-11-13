@@ -15,26 +15,33 @@
  */
 package com.daicy.panda.netty.handler;
 
+import com.daicy.panda.netty.PandaServerBuilder;
+import com.daicy.panda.netty.PandaStatus;
+import com.daicy.panda.netty.TracingThreadPoolExecutor;
 import com.daicy.panda.netty.servlet.ChannelThreadLocal;
 import com.daicy.panda.netty.servlet.impl.ServletContextImpl;
 import com.daicy.panda.netty.servlet.impl.ServletRequestImpl;
 import com.daicy.panda.netty.servlet.impl.ServletResponseImpl;
 import com.daicy.panda.netty.servlet.impl.filter.FilterChainFactory;
 import com.daicy.panda.netty.servlet.impl.filter.FilterChainImpl;
-import com.daicy.panda.util.SpringAppContextUtil;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.*;
 import io.netty.handler.codec.http.*;
+import io.netty.util.ReferenceCountUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.web.servlet.DispatcherServletAutoConfiguration;
-import org.springframework.web.servlet.DispatcherServlet;
 
 import javax.servlet.Servlet;
 
 @Slf4j
-public class HttpServerHandler extends SimpleChannelInboundHandler<Object> {
+public class HttpServerHandler extends ChannelInboundHandlerAdapter {
+
+    private final TracingThreadPoolExecutor asyncExecutor;
+    private final PandaStatus status;
+
+    public HttpServerHandler(PandaServerBuilder pandaServerBuilder) {
+        this.asyncExecutor = pandaServerBuilder.executor();
+        this.status = PandaStatus.get();
+    }
 
     @Override
     public void channelReadComplete(ChannelHandlerContext ctx) {
@@ -42,10 +49,21 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<Object> {
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, Object msg) {
+    public void channelRead(ChannelHandlerContext ctx, Object msg) {
+        status.totalRequestsIncrement();
+        if (asyncExecutor == null) {
+            handleRequest(ctx, msg);
+            return;
+        }
+
+        asyncExecutor.execute(() -> {
+            handleRequest(ctx, msg);
+        });
+    }
+
+    private void handleRequest(ChannelHandlerContext ctx, Object msg) {
         try {
             ChannelThreadLocal.set(ctx.channel());
-            final StringBuilder buf = new StringBuilder();
             if (msg instanceof FullHttpRequest) {
                 FullHttpRequest request = (FullHttpRequest) msg;
                 boolean isKeepAlive = HttpUtil.isKeepAlive(request);
@@ -76,9 +94,20 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<Object> {
                 }
             }
         } finally {
+            status.handledRequestsIncrement();
             ChannelThreadLocal.unset();
+            ReferenceCountUtil.release(msg);
         }
+    }
 
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        status.connectionIncrement();
+    }
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        status.connectionDecrement();
     }
 
     @Override

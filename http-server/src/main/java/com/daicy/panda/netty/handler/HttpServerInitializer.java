@@ -15,6 +15,7 @@
  */
 package com.daicy.panda.netty.handler;
 
+import com.daicy.panda.netty.servlet.impl.ServletContextImpl;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
@@ -46,6 +47,6 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
 //        pipeline.addLast(new HttpResponseEncoder());
         // Remove the following line if you don't want automatic content compression.
         //pipeline.addLast(new HttpContentCompressor());
-        pipeline.addLast(new HttpServerHandler());
+        pipeline.addLast(new HttpServerHandler(ServletContextImpl.get().getPandaServerBuilder()));
     }
 }

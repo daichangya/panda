@@ -106,7 +106,7 @@ public class ServletRequestImpl implements HttpServletRequest {
             List<String> values = new ArrayList<>();
             values.add(attribute.getValue());
             this.parameters.put(attribute.getName(), values);
-            this.attributes.put(attribute.getValue(),values);
+            this.attributes.put(attribute.getValue(), values);
         }
     }
 
@@ -155,7 +155,8 @@ public class ServletRequestImpl implements HttpServletRequest {
     @Override
     public String getParameter(String key) {
         List<String> parameterValues = parameters.get(key);
-        return (parameterValues == null || parameterValues.isEmpty()) ? null : parameterValues.get(0);    }
+        return (parameterValues == null || parameterValues.isEmpty()) ? null : parameterValues.get(0);
+    }
 
     @Override
     public Enumeration<String> getParameterNames() {
@@ -164,14 +165,17 @@ public class ServletRequestImpl implements HttpServletRequest {
 
     @Override
     public String[] getParameterValues(String key) {
-        return this.parameters.get(key).toArray(new String[] {});
+        List<String> values = this.parameters.get(key);
+        if (values == null || values.isEmpty())
+            return null;
+        return values.toArray(new String[values.size()]);
     }
 
     @Override
     public Map<String, String[]> getParameterMap() {
         Map<String, String[]> parameterMap = Maps.newHashMap();
-        for (Map.Entry<String, List<String>> parameter :parameters.entrySet()){
-            parameterMap.put(parameter.getKey(),parameter.getValue().toArray(new String[0]));
+        for (Map.Entry<String, List<String>> parameter : parameters.entrySet()) {
+            parameterMap.put(parameter.getKey(), parameter.getValue().toArray(new String[0]));
         }
         return parameterMap;
     }
@@ -198,7 +202,7 @@ public class ServletRequestImpl implements HttpServletRequest {
 
     @Override
     public void setAttribute(String s, Object o) {
-        this.attributes.put(s,o);
+        this.attributes.put(s, o);
     }
 
     @Override

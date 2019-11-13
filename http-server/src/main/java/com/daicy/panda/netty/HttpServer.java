@@ -21,6 +21,7 @@ import com.daicy.panda.netty.servlet.impl.ServletContextImpl;
 import com.daicy.panda.util.SpringAppContextUtil;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.DatagramChannel;
@@ -47,19 +48,22 @@ public final class HttpServer {
     static final boolean SSL = System.getProperty("ssl") != null;
     static final int PORT = Integer.parseInt(System.getProperty("port", SSL ? "8443" : "8080"));
 
+    private final PandaServerBuilder builder;
+
     private Channel channel;
 
-    private ServletContextImpl servletContext;
 
     public static void main(String[] args) throws Exception {
-        HttpServer httpServer = new HttpServer();
+        HttpServer httpServer = PandaServerBuilder.forPort(PORT).build();
         httpServer.createConfig();
         httpServer.start();
     }
 
-    public HttpServer() {
-        servletContext = new ServletContextImpl(new PandaContext());
+    public HttpServer(PandaServerBuilder builder) {
+        this.builder = builder;
     }
+
+
 
     private void createConfig(){
 
@@ -71,8 +75,8 @@ public final class HttpServer {
     public void start() {
 
         // Configure the server.
-        EventLoopGroup bossGroup = new NioEventLoopGroup(1);
-        EventLoopGroup workerGroup = new NioEventLoopGroup();
+        EventLoopGroup bossGroup = new NioEventLoopGroup(builder.getAcceptors());
+        EventLoopGroup workerGroup = new NioEventLoopGroup(builder.getIoWorkers());
         try {
             // Configure SSL.
             final SslContext sslCtx;
@@ -83,13 +87,17 @@ public final class HttpServer {
                 sslCtx = null;
             }
 
-            ServerBootstrap b = new ServerBootstrap();
-            b.group(bossGroup, workerGroup)
+            ServerBootstrap bootstrap = new ServerBootstrap().group(bossGroup, workerGroup)
                     .channel(NioServerSocketChannel.class)
-                    .handler(new LoggingHandler(LogLevel.INFO))
+//                    .handler(new LoggingHandler(LogLevel.INFO))
                     .childHandler(new HttpServerInitializer(sslCtx));
 
-            channel = b.bind(PORT).sync().channel();
+            bootstrap.option(ChannelOption.SO_BACKLOG, builder.getBacklog());
+            bootstrap.childOption(ChannelOption.TCP_NODELAY, true);
+            bootstrap.childOption(ChannelOption.SO_SNDBUF, builder.getSendBuffer());
+            bootstrap.childOption(ChannelOption.SO_RCVBUF, builder.getRecvBuffer());
+
+            channel = bootstrap.bind(PORT).sync().channel();
 
             log.info("Open your web browser and navigate to " +
                     (SSL ? "https" : "http") + "://127.0.0.1:" + PORT + '/');
@@ -124,6 +132,6 @@ public final class HttpServer {
     }
 
     public ServletContextImpl getServletContext() {
-        return servletContext;
+        return ServletContextImpl.get();
     }
 }
