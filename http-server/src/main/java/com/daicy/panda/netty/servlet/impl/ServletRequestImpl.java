@@ -37,8 +37,6 @@ public class ServletRequestImpl implements HttpServletRequest {
 
     private final Map<String, Object> attributes = new HashMap<String, Object>();
 
-    private final Map<String, String> headers = new HashMap<String, String>();
-
     private URIParser uriParser;
 
     private Cookie[] headCookies = null;
@@ -54,14 +52,6 @@ public class ServletRequestImpl implements HttpServletRequest {
         this.uriParser = new URIParser();
         this.uriParser.parse(originalRequest.getUri());
         parseParameters();
-        HttpHeaders requestHeaders = this.originalRequest.headers();
-        if (!requestHeaders.isEmpty()) {
-            for (Map.Entry<String, String> h : requestHeaders) {
-                String key = h.getKey();
-                String value = h.getValue();
-                headers.put(key, value);
-            }
-        }
     }
 
     /**
@@ -356,27 +346,27 @@ public class ServletRequestImpl implements HttpServletRequest {
 
     @Override
     public long getDateHeader(String name) {
-        return 0;
+        return Long.valueOf(originalRequest.headers().get(name, "-1"));
     }
 
     @Override
     public String getHeader(String name) {
-        return headers.get(name);
+        return originalRequest.headers().get(name);
     }
 
     @Override
     public Enumeration<String> getHeaders(String name) {
-        return Collections.enumeration(Lists.newArrayList(headers.get(name)));
+        return Collections.enumeration(originalRequest.headers().getAll(name));
     }
 
     @Override
     public Enumeration<String> getHeaderNames() {
-        return Collections.enumeration(headers.keySet());
+        return Collections.enumeration(originalRequest.headers().names());
     }
 
     @Override
     public int getIntHeader(String name) {
-        return HttpHeaders.getIntHeader(this.originalRequest, name, -1);
+        return originalRequest.headers().getInt(name);
     }
 
     @Override

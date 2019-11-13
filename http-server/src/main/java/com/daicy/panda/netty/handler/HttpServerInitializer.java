@@ -41,8 +41,8 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
         pipeline.addLast(new HttpServerCodec());
         // Uncomment the following line if you don't want to handle HttpChunks.
         pipeline.addLast(new HttpObjectAggregator(65536));
-        pipeline.addLast(new ChunkedWriteHandler());
-        pipeline.addLast(new HttpStaticFileServerHandler());
+//        pipeline.addLast(new ChunkedWriteHandler());
+//        pipeline.addLast(new HttpStaticFileServerHandler());
 
 //        pipeline.addLast(new HttpResponseEncoder());
         // Remove the following line if you don't want automatic content compression.
