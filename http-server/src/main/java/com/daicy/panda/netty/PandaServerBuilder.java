@@ -5,6 +5,7 @@ import com.daicy.panda.util.Constant;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
+import java.net.InetAddress;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
@@ -33,27 +34,31 @@ public class PandaServerBuilder {
 
     private int maxPacketLength = Constant.DEFAULT_MAX_PACKET_LENGTH;
 
-    private String[] scanPackages;
     private boolean devMode;
-    private boolean springOn;
-    private boolean filterOn;
 
     private String contextPath = StringUtils.EMPTY;
 
     private TracingThreadPoolExecutor executor;
 
-    private final int port;
+    private int port;
+    private InetAddress inetAddress;
 
     private PandaServerBuilder(int port) {
         this.port = port;
     }
 
-    public boolean isFilterOn() {
-        return filterOn;
-    }
-
     public static PandaServerBuilder forPort(int port) {
         return new PandaServerBuilder(port);
+    }
+
+    public PandaServerBuilder port(int port) {
+        this.port = port;
+        return this;
+    }
+
+    public PandaServerBuilder inetAddress(InetAddress inetAddress) {
+        this.inetAddress = inetAddress;
+        return this;
     }
 
     public PandaServerBuilder backlog(int backlog) {
@@ -111,29 +116,20 @@ public class PandaServerBuilder {
         return this;
     }
 
-    public PandaServerBuilder scanPackages(String... packages) {
-        this.scanPackages = packages;
-        return this;
-    }
 
     public PandaServerBuilder devMode(boolean devMode) {
         this.devMode = devMode;
         return this;
     }
 
-    public PandaServerBuilder springOn() {
-        this.springOn = true;
-        return this;
-    }
-
-    public PandaServerBuilder filterOn() {
-        this.filterOn = true;
-        return this;
-    }
 
     public PandaServerBuilder contextPath(String contextPath) {
         this.contextPath = contextPath;
         return this;
+    }
+
+    public InetAddress getInetAddress() {
+        return inetAddress;
     }
 
     public int getBacklog() {
@@ -168,9 +164,6 @@ public class PandaServerBuilder {
         return devMode;
     }
 
-    public boolean isSpringOn() {
-        return this.springOn;
-    }
 
     public int getMaxIdleTime() {
         return maxIdleTime;
@@ -188,9 +181,6 @@ public class PandaServerBuilder {
         return maxPacketLength;
     }
 
-    public String[] scanPackages() {
-        return this.scanPackages;
-    }
 
     public TracingThreadPoolExecutor executor() {
         return this.executor;

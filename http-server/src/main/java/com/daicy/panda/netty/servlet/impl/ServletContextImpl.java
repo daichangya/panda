@@ -76,6 +76,10 @@ public class ServletContextImpl implements ServletContext {
         return contextPath;
     }
 
+    public void setContextPath(String contextPath) {
+        this.contextPath = contextPath;
+    }
+
     @Override
     public int getMajorVersion() {
         return 2;

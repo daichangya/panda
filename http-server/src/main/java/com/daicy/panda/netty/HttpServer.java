@@ -61,6 +61,8 @@ public final class HttpServer {
 
     public HttpServer(PandaServerBuilder builder) {
         this.builder = builder;
+        int port = (builder.getPort() >= 0) ? builder.getPort() : PORT;
+        builder.port(port);
     }
 
 
@@ -97,10 +99,10 @@ public final class HttpServer {
             bootstrap.childOption(ChannelOption.SO_SNDBUF, builder.getSendBuffer());
             bootstrap.childOption(ChannelOption.SO_RCVBUF, builder.getRecvBuffer());
 
-            channel = bootstrap.bind(PORT).sync().channel();
+            channel = bootstrap.bind(builder.getInetAddress(),builder.getPort()).sync().channel();
 
             log.info("Open your web browser and navigate to " +
-                    (SSL ? "https" : "http") + "://127.0.0.1:" + PORT + '/');
+                    (SSL ? "https" : "http") + "://127.0.0.1:" + builder.getPort() + '/');
 
             channel.closeFuture().sync();
         } catch (Exception ex) {
