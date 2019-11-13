@@ -5,11 +5,10 @@
     <parent>
         <groupId>com.daicy.panda</groupId>
         <artifactId>parent</artifactId>
-        <version>6.0.0-SNAPSHOT</version>
+        <version>${revision}</version>
     </parent>
     <groupId>com.daicy.panda</groupId>
     <artifactId>sample</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
     <name>sample</name>
     <description>Demo project for Spring Boot</description>
 
@@ -17,7 +16,7 @@
         <dependency>
             <groupId>com.daicy.panda</groupId>
             <artifactId>spring-boot-starter-netty</artifactId>
-            <version>6.0.0-SNAPSHOT</version>
+            <version>${parent.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

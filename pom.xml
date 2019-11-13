@@ -9,7 +9,7 @@
 	</parent>
 	<groupId>com.daicy.panda</groupId>
 	<artifactId>parent</artifactId>
-	<version>6.0.0-SNAPSHOT</version>
+	<version>${revision}</version>
 	<packaging>pom</packaging>
 	<description>Http Sever</description>
 	<modules>
@@ -18,6 +18,7 @@
 	</modules>
 
 	<properties>
+		<revision>6.0.1-SNAPSHOT</revision>
 		<maven-compiler-plugin.version>3.7.0</maven-compiler-plugin.version>
 		<lombok.version>1.18.8</lombok.version>
 		<commons-io.version>2.0.1</commons-io.version>
@@ -43,4 +44,29 @@
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
+
+	<distributionManagement>
+		<repository>
+			<id>releases</id>
+			<url>http://registry.maven.op.xcar.com.cn:8081/repository/maven-releases/</url>
+		</repository>
+		<snapshotRepository>
+			<id>snapshots</id>
+			<url>http://registry.maven.op.xcar.com.cn:8081/repository/maven-snapshots/</url>
+		</snapshotRepository>
+	</distributionManagement>
+
+	<repositories>
+		<repository>
+			<id>public</id>
+			<name>Public Repositories</name>
+			<url>http://registry.maven.op.xcar.com.cn:8081/repository/maven-public/</url>
+			<!--<url>http://maven.xcar.com.cn/nexus/content/groups/public</url>-->
+		</repository>
+		<repository>
+			<id>nexus-aliyun</id>
+			<name>Nexus aliyun</name>
+			<url>http://maven.aliyun.com/nexus/content/groups/public</url>
+		</repository>
+	</repositories>
 </project>

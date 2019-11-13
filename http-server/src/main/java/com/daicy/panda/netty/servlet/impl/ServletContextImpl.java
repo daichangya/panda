@@ -1,5 +1,6 @@
 package com.daicy.panda.netty.servlet.impl;
 
+import com.daicy.panda.netty.PandaServerBuilder;
 import com.daicy.panda.netty.servlet.impl.filter.FilterDef;
 import com.daicy.panda.netty.servlet.impl.filter.FilterRegistrationImpl;
 import com.google.common.collect.Maps;
@@ -31,12 +32,14 @@ public class ServletContextImpl implements ServletContext {
     private static final Logger log = LoggerFactory
             .getLogger(ServletContextImpl.class);
 
-    private static ServletContextImpl instance;
+    private static ServletContextImpl instance = new ServletContextImpl(new PandaContext());
 
     /**
      * The Context instance with which we are associated.
      */
     private final PandaContext context;
+
+    private PandaServerBuilder pandaServerBuilder;
 
     private Map<String, Object> attributes = Maps.newHashMap();
 
@@ -48,7 +51,7 @@ public class ServletContextImpl implements ServletContext {
 
     private final SevletFactory sevletFactory;
 
-    public ServletContextImpl(PandaContext context) {
+    private ServletContextImpl(PandaContext context) {
         this.context = context;
         instance = this;
         this.sevletFactory = new SevletFactory();
@@ -71,6 +74,10 @@ public class ServletContextImpl implements ServletContext {
     @Override
     public String getContextPath() {
         return contextPath;
+    }
+
+    public void setContextPath(String contextPath) {
+        this.contextPath = contextPath;
     }
 
     @Override
@@ -460,5 +467,13 @@ public class ServletContextImpl implements ServletContext {
 
     public PandaContext getContext() {
         return context;
+    }
+
+    public PandaServerBuilder getPandaServerBuilder() {
+        return pandaServerBuilder;
+    }
+
+    public void setPandaServerBuilder(PandaServerBuilder pandaServerBuilder) {
+        this.pandaServerBuilder = pandaServerBuilder;
     }
 }

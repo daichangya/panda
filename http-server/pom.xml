@@ -7,18 +7,18 @@
 	<parent>
 		<groupId>com.daicy.panda</groupId>
 		<artifactId>parent</artifactId>
-		<version>6.0.0-SNAPSHOT</version>
+		<version>${revision}</version>
 	</parent>
 
 	<groupId>com.daicy.panda</groupId>
 	<artifactId>http-server</artifactId>
-	<version>6.0.0-SNAPSHOT</version>
 	<description>Http Sever</description>
 
 	<properties>
 		<maven-compiler-plugin.version>3.7.0</maven-compiler-plugin.version>
 		<lombok.version>1.18.8</lombok.version>
 		<commons-io.version>2.0.1</commons-io.version>
+		<commons-collections.version>3.2.2</commons-collections.version>
 		<guava.version>20.0</guava.version>
 		<netty.version>4.1.43.Final</netty.version>
 	</properties>
@@ -46,11 +46,6 @@
 			<!--<scope>provided</scope>-->
 		</dependency>
 		<dependency>
-			<groupId>commons-io</groupId>
-			<artifactId>commons-io</artifactId>
-			<version>${commons-io.version}</version>
-		</dependency>
-		<dependency>
 			<groupId>com.google.guava</groupId>
 			<artifactId>guava</artifactId>
 			<version>${guava.version}</version>
@@ -61,19 +56,18 @@
 			<version>${netty.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>commons-collections</groupId>
-			<artifactId>commons-collections</artifactId>
-			<version>3.2.2</version>
+			<groupId>commons-io</groupId>
+			<artifactId>commons-io</artifactId>
+			<version>${commons-io.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>commons-beanutils</groupId>
-			<artifactId>commons-beanutils</artifactId>
-			<version>1.9.4</version>
+			<groupId>commons-collections</groupId>
+			<artifactId>commons-collections</artifactId>
+			<version>${commons-collections.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.commons</groupId>
-			<artifactId>commons-text</artifactId>
-			<version>1.6</version>
+			<artifactId>commons-lang3</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

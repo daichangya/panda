@@ -1,6 +1,7 @@
 package com.daicy.panda.netty.embedded;
 
 import com.daicy.panda.netty.HttpServer;
+import com.daicy.panda.netty.PandaServerBuilder;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.boot.web.server.WebServer;
@@ -23,8 +24,8 @@ public class NettyWebServer implements WebServer {
 
     private ServletContextInitializer[] initializers;
 
-    public NettyWebServer(ServletContextInitializer... initializers) {
-        httpServer = new HttpServer();
+    public NettyWebServer(PandaServerBuilder pandaServerBuilder,ServletContextInitializer... initializers) {
+        httpServer = pandaServerBuilder.build();
         this.initializers = initializers;
         if(null !=initializers){
             for (ServletContextInitializer servletContextInitializer:initializers){

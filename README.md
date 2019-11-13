@@ -19,3 +19,6 @@
 
 6.0.0
 * 新建模块 spring-boot-starter-netty
+
+6.0.1
+* 添加 channelHandle 线程池
