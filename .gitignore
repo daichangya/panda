@@ -1,41 +1,31 @@
-# kdiff3 ignore
-*.orig
-
-# maven ignore
+HELP.md
 target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**
+!**/src/test/**
 
-# eclipse ignore
-.settings/
-.project
+### STS ###
+.apt_generated
 .classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
 
-# idea ignore
-.idea/
-*.ipr
-*.iml
+### IntelliJ IDEA ###
+.idea
 *.iws
-*/spring-dao.xml
-*/system.properties
+*.iml
+*.ipr
 
-# netbeans ignore
-nb-configuration.xml
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
 
-# temp ignore
-*.log
-*.cache
-*.diff
-*.patch
-*.tmp
-
-# system ignore
-.DS_Store
-Thumbs.db
-
-# package ignore (optional)
-# *.jar
-# *.war
-# *.zip
-# *.tar
-# *.tar.gz
-/build/
-/bin
+### VS Code ###
+.vscode/

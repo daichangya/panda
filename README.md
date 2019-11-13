@@ -16,3 +16,6 @@
 5.0
 * 集成spring boot,替换内嵌tomcat
 * Netty spring boot Spring Web
+
+6.0.0
+* 新建模块 spring-boot-starter-netty

@@ -1,5 +1,0 @@
-logging:
-  level:
-    ROOT: INFO
-server:
-  port: 8080
