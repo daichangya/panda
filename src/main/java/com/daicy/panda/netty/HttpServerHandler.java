@@ -18,6 +18,8 @@ package com.daicy.panda.netty;
 import com.daicy.panda.netty.servlet.ChannelThreadLocal;
 import com.daicy.panda.netty.servlet.impl.ServletRequestImpl;
 import com.daicy.panda.netty.servlet.impl.ServletResponseImpl;
+import com.daicy.panda.netty.servlet.impl.filter.FilterChainFactory;
+import com.daicy.panda.netty.servlet.impl.filter.FilterChainImpl;
 import com.daicy.panda.util.SpringAppContextUtil;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -26,6 +28,8 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.servlet.DispatcherServlet;
+
+import javax.servlet.Servlet;
 
 @Slf4j
 public class HttpServerHandler extends SimpleChannelInboundHandler<Object> {
@@ -46,9 +50,12 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<Object> {
                 FullHttpResponse response = new DefaultFullHttpResponse(request.protocolVersion(), HttpResponseStatus.OK);
                 ServletRequestImpl servletRequest = new ServletRequestImpl(request);
                 ServletResponseImpl servletResponse = new ServletResponseImpl(response);
+                Servlet servlet = SpringAppContextUtil.getBean(DispatcherServlet.class);
+                FilterChainImpl chain = FilterChainFactory.createFilterChain(servletRequest,servlet);
 
                 try {
-                    SpringAppContextUtil.getBean(DispatcherServlet.class).service(servletRequest,servletResponse);
+                    chain.doFilter(servletRequest,servletResponse);
+                    servlet.service(servletRequest,servletResponse);
                 } catch (Exception e) {
                     log.error("controller invoke uri:{}",request.uri(),e);
                 }

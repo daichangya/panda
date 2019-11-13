@@ -1,6 +1,7 @@
 ###基础了解
 * https://blog.csdn.net/andy_zhang2007/article/details/94980834
 * https://blog.csdn.net/andy_zhang2007/article/details/78819331
+* https://www.jianshu.com/p/42ea7c928353
 
 ####NettyServletWebServerFactory
 

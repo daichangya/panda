@@ -1,7 +1,5 @@
 package com.daicy.panda.netty.servlet.impl;
 
-import com.daicy.panda.netty.servlet.impl.filter.PandaContext;
-
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.Servlet;
 import javax.servlet.ServletRegistration;

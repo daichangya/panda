@@ -1,5 +1,7 @@
 package com.daicy.panda.netty.servlet.impl.filter;
 
+import com.daicy.panda.netty.servlet.impl.PandaContext;
+
 import javax.servlet.DispatcherType;
 import javax.servlet.FilterRegistration;
 import java.util.*;
@@ -19,29 +21,93 @@ public class FilterRegistrationImpl implements FilterRegistration.Dynamic {
 
     private final FilterDef filterDef;
 
-    public FilterRegistrationImpl( FilterDef filterDef,PandaContext context) {
+    public FilterRegistrationImpl(FilterDef filterDef, PandaContext context) {
         this.context = context;
         this.filterDef = filterDef;
     }
 
     @Override
     public void addMappingForServletNames(EnumSet<DispatcherType> dispatcherTypes, boolean isMatchAfter, String... servletNames) {
+        FilterMap filterMap = new FilterMap();
 
+        filterMap.setFilterName(filterDef.getFilterName());
+
+        if (dispatcherTypes != null) {
+            for (DispatcherType dispatcherType : dispatcherTypes) {
+                filterMap.setDispatcher(dispatcherType.name());
+            }
+        }
+
+        if (servletNames != null) {
+            for (String servletName : servletNames) {
+                filterMap.addServletName(servletName);
+            }
+
+            context.addFilterMap(filterMap);
+//            if (isMatchAfter) {
+//                context.addFilterMap(filterMap);
+//            } else {
+//                context.addFilterMapBefore(filterMap);
+//            }
+        }
+        // else error?
     }
 
     @Override
     public Collection<String> getServletNameMappings() {
-        return null;
-    }
+        Collection<String> result = new HashSet<>();
+
+        List<FilterMap> filterMaps = context.getFilterMapList();
+
+        for (FilterMap filterMap : filterMaps) {
+            if (filterMap.getFilterName().equals(filterDef.getFilterName())) {
+                for (String servletName : filterMap.getServletNames()) {
+                    result.add(servletName);
+                }
+            }
+        }
+        return result;    }
 
     @Override
     public void addMappingForUrlPatterns(EnumSet<DispatcherType> dispatcherTypes, boolean isMatchAfter, String... urlPatterns) {
 
+        FilterMap filterMap = new FilterMap();
+
+        filterMap.setFilterName(filterDef.getFilterName());
+
+        if (dispatcherTypes != null) {
+            for (DispatcherType dispatcherType : dispatcherTypes) {
+                filterMap.setDispatcher(dispatcherType.name());
+            }
+        }
+
+        if (urlPatterns != null) {
+            // % decoded (if necessary) using UTF-8
+            for (String urlPattern : urlPatterns) {
+                filterMap.addURLPattern(urlPattern);
+            }
+            context.addFilterMap(filterMap);
+//            if (isMatchAfter) {
+//                context.addFilterMap(filterMap);
+//            } else {
+//                context.addFilterMapBefore(filterMap);
+//            }
+        }
+        // else error?
     }
 
     @Override
     public Collection<String> getUrlPatternMappings() {
-        return null;
+        Collection<String> result = new HashSet<>();
+        List<FilterMap> filterMaps = context.getFilterMapList();
+        for (FilterMap filterMap : filterMaps) {
+            if (filterMap.getFilterName().equals(filterDef.getFilterName())) {
+                for (String urlPattern : filterMap.getURLPatterns()) {
+                    result.add(urlPattern);
+                }
+            }
+        }
+        return result;
     }
 
 

@@ -22,7 +22,7 @@ public class SevletFactory {
         try {
             servlet = ConstructorUtils.invokeConstructor((Class<T>) clazz, null);
             // create and configure beans
-            ServletConfigImpl servletConfig = new ServletConfigImpl(servlet.getServletInfo());
+            ServletConfigImpl servletConfig = new ServletConfigImpl(clazz.getName());
             servletConfig.setServletContext(ServletContextImpl.get());
             servlet.init(servletConfig);
         } catch (InvocationTargetException e) {

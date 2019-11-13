@@ -2,7 +2,6 @@ package com.daicy.panda.netty.servlet.impl;
 
 import com.daicy.panda.netty.servlet.impl.filter.FilterDef;
 import com.daicy.panda.netty.servlet.impl.filter.FilterRegistrationImpl;
-import com.daicy.panda.netty.servlet.impl.filter.PandaContext;
 import com.google.common.collect.Maps;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.ClassUtils;
@@ -346,6 +345,13 @@ public class ServletContextImpl implements ServletContext {
         }
 
         if (filter == null) {
+            try {
+                Class clazz = ClassUtils.getClass(filterClass);
+                filter = createFilter(clazz);
+            } catch (Exception e) {
+                throw new IllegalArgumentException("applicationContext.invalidFilterClass" + filterClass);
+            }
+            filterDef.setFilter(filter);
             filterDef.setFilterClass(filterClass);
         } else {
             filterDef.setFilterClass(filter.getClass().getName());
@@ -382,7 +388,7 @@ public class ServletContextImpl implements ServletContext {
     public Map<String, ? extends FilterRegistration> getFilterRegistrations() {
         Map<String, FilterRegistrationImpl> result = new HashMap<>();
 
-        FilterDef[] filterDefs = (FilterDef[]) context.getFilterMaps().values().toArray();
+        FilterDef[] filterDefs = (FilterDef[]) context.getFilterDefMap().values().toArray();
         for (FilterDef filterDef : filterDefs) {
             result.put(filterDef.getFilterName(),
                     new FilterRegistrationImpl(filterDef, context));
@@ -452,4 +458,7 @@ public class ServletContextImpl implements ServletContext {
         return null;
     }
 
+    public PandaContext getContext() {
+        return context;
+    }
 }

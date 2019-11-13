@@ -1,5 +1,7 @@
 package com.daicy.panda.controller;
 
+import org.springframework.stereotype.Component;
+
 import javax.servlet.*;
 import javax.servlet.annotation.WebFilter;
 import javax.servlet.http.HttpServletRequest;
@@ -11,7 +13,8 @@ import java.io.IOException;
  * @description: com.daicy.panda.controller
  * @date:19-11-12
  */
-@WebFilter(filterName = "myFilter", urlPatterns = "/*")
+//@WebFilter(filterName = "myFilter", urlPatterns = "/*")
+@Component
 public class HttpFilter implements Filter {
 
     @Override

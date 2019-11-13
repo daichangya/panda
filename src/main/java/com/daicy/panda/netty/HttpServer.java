@@ -15,8 +15,7 @@
  */
 package com.daicy.panda.netty;
 
-import com.daicy.panda.netty.servlet.impl.filter.PandaContext;
-import com.daicy.panda.netty.servlet.impl.ServletConfigImpl;
+import com.daicy.panda.netty.servlet.impl.PandaContext;
 import com.daicy.panda.netty.servlet.impl.ServletContextImpl;
 import com.daicy.panda.util.SpringAppContextUtil;
 import io.netty.bootstrap.ServerBootstrap;
@@ -34,12 +33,8 @@ import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.context.support.XmlWebApplicationContext;
-import org.springframework.web.servlet.DispatcherServlet;
 
-import javax.net.ssl.SSLException;
-import javax.servlet.ServletException;
 import java.net.InetSocketAddress;
-import java.security.cert.CertificateException;
 
 /**
  * An HTTP server that sends back the content of the received HTTP request
