@@ -34,6 +34,8 @@ public class PandaServerBuilder {
 
     private int maxPacketLength = Constant.DEFAULT_MAX_PACKET_LENGTH;
 
+    private int sessionTimeout = 60 * 60; // 1 hour
+
     private boolean devMode;
 
     private String contextPath = StringUtils.EMPTY;
@@ -60,6 +62,12 @@ public class PandaServerBuilder {
         this.inetAddress = inetAddress;
         return this;
     }
+
+    public PandaServerBuilder sessionTimeout(int sessionTimeout) {
+        this.sessionTimeout = sessionTimeout;
+        return this;
+    }
+
 
     public PandaServerBuilder backlog(int backlog) {
         this.backlog = backlog;
@@ -130,6 +138,10 @@ public class PandaServerBuilder {
 
     public InetAddress getInetAddress() {
         return inetAddress;
+    }
+
+    public int getSessionTimeout() {
+        return sessionTimeout;
     }
 
     public int getBacklog() {

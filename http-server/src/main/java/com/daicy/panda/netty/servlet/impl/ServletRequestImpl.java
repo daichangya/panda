@@ -1,6 +1,7 @@
 package com.daicy.panda.netty.servlet.impl;
 
 import com.daicy.panda.netty.servlet.ChannelThreadLocal;
+import com.daicy.panda.netty.servlet.SessionThreadLocal;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import io.netty.handler.codec.http.*;
@@ -9,16 +10,19 @@ import io.netty.handler.codec.http.multipart.HttpPostRequestDecoder;
 import io.netty.handler.codec.http.multipart.InterfaceHttpData;
 import io.netty.handler.ssl.SslHandler;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.servlet.*;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.*;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.security.Principal;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author: create by daichangya
@@ -37,6 +41,8 @@ public class ServletRequestImpl implements HttpServletRequest {
 
     private final Map<String, Object> attributes = new HashMap<String, Object>();
 
+    private BufferedReader reader;
+
     private URIParser uriParser;
 
     private Cookie[] headCookies = null;
@@ -49,6 +55,8 @@ public class ServletRequestImpl implements HttpServletRequest {
         } else {
             this.inputStream = new ServletInputStreamImpl(originalRequest);
         }
+        this.reader = new BufferedReader(new InputStreamReader(inputStream));
+
         this.uriParser = new URIParser();
         this.uriParser.parse(originalRequest.getUri());
         parseParameters();
@@ -187,7 +195,7 @@ public class ServletRequestImpl implements HttpServletRequest {
 
     @Override
     public BufferedReader getReader() throws IOException {
-        return null;
+        return reader;
     }
 
     @Override
@@ -202,12 +210,47 @@ public class ServletRequestImpl implements HttpServletRequest {
 
     @Override
     public Locale getLocale() {
-        return null;
+
+        String language = originalRequest.headers().get(HttpHeaderNames.ACCEPT_LANGUAGE);
+
+        // handle no locale
+        if (StringUtils.isEmpty(language))
+            return Locale.getDefault();
+
+        return getLocale(language);
+
     }
+
+    private Locale getLocale(String language) {
+        if (language == null) return null;
+
+        int i = language.indexOf(';');
+        if (i >= 0) language = language.substring(0, i).trim();
+        String country = "";
+        int dash = language.indexOf('-');
+        if (dash > -1) {
+            country = language.substring(dash + 1).trim();
+            language = language.substring(0, dash).trim();
+        }
+        return new Locale(language, country);
+    }
+
 
     @Override
     public Enumeration<Locale> getLocales() {
-        return null;
+
+        List<String> acceptable = originalRequest.headers().getAll(HttpHeaderNames.ACCEPT_LANGUAGE);
+
+        // handle no locale
+        if (acceptable.isEmpty())
+            return Collections.enumeration(Lists.newArrayList(Locale.getDefault()));
+
+        List<Locale> locales = acceptable.stream().map(language ->
+        {
+            return new Locale(language);
+        }).collect(Collectors.toList());
+
+        return Collections.enumeration(locales);
     }
 
     @Override
@@ -259,11 +302,20 @@ public class ServletRequestImpl implements HttpServletRequest {
         return getServerPort();
     }
 
+
     @Override
     public String getServerName() {
-        InetSocketAddress addr = (InetSocketAddress) ChannelThreadLocal.get()
-                .localAddress();
-        return addr.getHostName();
+        String host = originalRequest.headers().get(HttpHeaderNames.HOST);
+        if (host != null) {
+            host = host.trim();
+            if (host.startsWith("[")) {
+                host = host.substring(1, host.indexOf(']'));
+            }
+            else if (host.contains(":")) {
+                host = host.substring(0, host.indexOf(':'));
+            }
+        }
+        return host;
     }
 
     @Override
@@ -279,29 +331,37 @@ public class ServletRequestImpl implements HttpServletRequest {
         return null;
     }
 
+    private boolean asyncStarted = false;
+
+    private AsyncContextImpl asyncContext;
+
     @Override
     public AsyncContext startAsync() throws IllegalStateException {
-        return null;
+        this.asyncStarted = true;
+        this.asyncContext = new AsyncContextImpl(this, null);
+        return this.asyncContext;
     }
 
     @Override
     public AsyncContext startAsync(ServletRequest servletRequest, ServletResponse servletResponse) throws IllegalStateException {
-        return null;
+        this.asyncStarted = true;
+        this.asyncContext = new AsyncContextImpl(servletRequest, servletResponse);
+        return this.asyncContext;
     }
 
     @Override
     public boolean isAsyncStarted() {
-        return false;
+        return asyncStarted;
     }
 
     @Override
     public boolean isAsyncSupported() {
-        return false;
+        return true;
     }
 
     @Override
     public AsyncContext getAsyncContext() {
-        return null;
+        return asyncContext;
     }
 
     @Override
@@ -330,7 +390,7 @@ public class ServletRequestImpl implements HttpServletRequest {
                 for (io.netty.handler.codec.http.Cookie c : cookies) {
                     Cookie cookie = new Cookie(c.getName(), c.getValue());
                     cookie.setComment(c.getComment());
-                    cookie.setDomain(c.getDomain());
+                    cookie.setDomain(StringUtils.defaultString(c.getDomain()));
                     cookie.setMaxAge((int) c.getMaxAge());
                     cookie.setPath(c.getPath());
                     cookie.setSecure(c.isSecure());
@@ -405,12 +465,6 @@ public class ServletRequestImpl implements HttpServletRequest {
     }
 
     @Override
-    public String getRequestedSessionId() {
-        return null;
-    }
-
-
-    @Override
     public String getQueryString() {
         return this.uriParser.getQueryString();
     }
@@ -449,13 +503,24 @@ public class ServletRequestImpl implements HttpServletRequest {
     }
 
     @Override
-    public HttpSession getSession(boolean create) {
-        return null;
+    public String getRequestedSessionId() {
+        SessionImpl session = SessionThreadLocal.get();
+        return session != null ? session.getId() : null;
     }
 
     @Override
     public HttpSession getSession() {
-        return null;
+        HttpSession s = SessionThreadLocal.getOrCreate();
+        return s;
+    }
+
+    @Override
+    public HttpSession getSession(boolean create) {
+        HttpSession session = SessionThreadLocal.get();
+        if (session == null && create) {
+            session = SessionThreadLocal.getOrCreate();
+        }
+        return session;
     }
 
     @Override

@@ -31,6 +31,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.web.servlet.DispatcherServletAutoConfiguration;
 
 import javax.servlet.Servlet;
+import javax.servlet.http.HttpServletResponse;
 
 @Slf4j
 public class HttpServerHandler extends ChannelInboundHandlerAdapter {
@@ -75,7 +76,9 @@ public class HttpServerHandler extends ChannelInboundHandlerAdapter {
                     Servlet servlet = ServletContextImpl.get().getServlet(DispatcherServletAutoConfiguration.DEFAULT_DISPATCHER_SERVLET_BEAN_NAME);
                     FilterChainImpl chain = FilterChainFactory.createFilterChain(servletRequest, servlet);
                     chain.doFilter(servletRequest, servletResponse);
-                    servlet.service(servletRequest, servletResponse);
+                    if (servletResponse.getStatus() == HttpServletResponse.SC_OK) {
+                        servlet.service(servletRequest, servletResponse);
+                    }
                 } catch (Exception e) {
                     log.error("controller invoke uri:{}", request.uri(), e);
                 }

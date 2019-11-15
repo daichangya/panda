@@ -16,9 +16,7 @@
 package com.daicy.panda.netty;
 
 import com.daicy.panda.netty.handler.HttpServerInitializer;
-import com.daicy.panda.netty.servlet.impl.PandaContext;
 import com.daicy.panda.netty.servlet.impl.ServletContextImpl;
-import com.daicy.panda.util.SpringAppContextUtil;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelOption;
@@ -28,13 +26,10 @@ import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.ServerSocketChannel;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.handler.logging.LogLevel;
-import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.context.support.XmlWebApplicationContext;
 
 import java.net.InetSocketAddress;
 
@@ -52,11 +47,16 @@ public final class HttpServer {
 
     private Channel channel;
 
+    private EventLoopGroup bossGroup;
+    private EventLoopGroup workerGroup;
+
 
     public static void main(String[] args) throws Exception {
         HttpServer httpServer = PandaServerBuilder.forPort(PORT).build();
-        httpServer.createConfig();
+//        httpServer.createConfig();
         httpServer.start();
+        httpServer.run();
+        httpServer.stop();
     }
 
     public HttpServer(PandaServerBuilder builder) {
@@ -66,19 +66,19 @@ public final class HttpServer {
     }
 
 
-
-    private void createConfig(){
-
-        XmlWebApplicationContext context = new XmlWebApplicationContext();
-        context.setConfigLocation("classpath:/services.xml");
-        SpringAppContextUtil.setApplicationContextHolder(context);
-    }
+//    private void createConfig() {
+//
+//        XmlWebApplicationContext context = new XmlWebApplicationContext();
+//        context.setConfigLocation("classpath:/services.xml");
+//        SpringAppContextUtil.setApplicationContextHolder(context);
+//        DispatcherServlet dispatcherServlet = new DispatcherServlet();
+//        getServletContext().addServlet("dispatcherServlet",dispatcherServlet);
+//    }
 
     public void start() {
-
         // Configure the server.
-        EventLoopGroup bossGroup = new NioEventLoopGroup(builder.getAcceptors());
-        EventLoopGroup workerGroup = new NioEventLoopGroup(builder.getIoWorkers());
+        bossGroup = new NioEventLoopGroup(builder.getAcceptors());
+        workerGroup = new NioEventLoopGroup(builder.getIoWorkers());
         try {
             // Configure SSL.
             final SslContext sslCtx;
@@ -99,18 +99,27 @@ public final class HttpServer {
             bootstrap.childOption(ChannelOption.SO_SNDBUF, builder.getSendBuffer());
             bootstrap.childOption(ChannelOption.SO_RCVBUF, builder.getRecvBuffer());
 
-            channel = bootstrap.bind(builder.getInetAddress(),builder.getPort()).sync().channel();
+            channel = bootstrap.bind(builder.getPort()).sync().channel();
 
             log.info("Open your web browser and navigate to " +
                     (SSL ? "https" : "http") + "://127.0.0.1:" + builder.getPort() + '/');
 
-            channel.closeFuture().sync();
         } catch (Exception ex) {
             log.error("Start panda application failed, cause: " + ex.getMessage(), ex);
-        } finally {
-            bossGroup.shutdownGracefully();
-            workerGroup.shutdownGracefully();
         }
+    }
+
+    public void run() {
+        try {
+            channel.closeFuture().sync();
+        } catch (InterruptedException e) {
+            log.error("Start panda application failed, cause: ", e);
+        }
+    }
+
+    public void stop() {
+        bossGroup.shutdownGracefully();
+        workerGroup.shutdownGracefully();
     }
 
     public InetSocketAddress address() {

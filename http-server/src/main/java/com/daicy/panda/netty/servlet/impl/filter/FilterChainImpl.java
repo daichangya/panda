@@ -3,6 +3,7 @@ package com.daicy.panda.netty.servlet.impl.filter;
 import com.google.common.collect.Lists;
 
 import javax.servlet.*;
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
@@ -22,7 +23,7 @@ public class FilterChainImpl implements FilterChain {
     @Override
     public void doFilter(ServletRequest request, ServletResponse response) throws IOException, ServletException {
         Filter filter = filters.poll();
-        if(null!=filter){
+        if (null != filter) {
             filter.doFilter(request, response, this);
         }
     }

@@ -24,11 +24,11 @@ public class NettyWebServer implements WebServer {
 
     private ServletContextInitializer[] initializers;
 
-    public NettyWebServer(PandaServerBuilder pandaServerBuilder,ServletContextInitializer... initializers) {
+    public NettyWebServer(PandaServerBuilder pandaServerBuilder, ServletContextInitializer... initializers) {
         httpServer = pandaServerBuilder.build();
         this.initializers = initializers;
-        if(null !=initializers){
-            for (ServletContextInitializer servletContextInitializer:initializers){
+        if (null != initializers) {
+            for (ServletContextInitializer servletContextInitializer : initializers) {
                 try {
                     servletContextInitializer.onStartup(httpServer.getServletContext());
                 } catch (ServletException e) {
@@ -40,14 +40,26 @@ public class NettyWebServer implements WebServer {
 
     @Override
     public void start() throws WebServerException {
-        this.httpServer.start();
+        httpServer.start();
+        Thread awaitThread = new Thread("netty-server") {
+            @Override
+            public void run() {
+                httpServer.run();
+            }
+
+        };
+        awaitThread.setContextClassLoader(getClass().getClassLoader());
+        awaitThread.setDaemon(false);
+        awaitThread.start();
         logger.info("Netty started on port(s): " + getPort());
     }
+
 
     @Override
     public void stop() throws WebServerException {
         if (this.httpServer != null) {
             httpServer.getChannel().close();
+            httpServer.stop();
             this.httpServer = null;
         }
     }
@@ -56,7 +68,6 @@ public class NettyWebServer implements WebServer {
     public int getPort() {
         return httpServer.address().getPort();
     }
-
 
 
 }

@@ -7,6 +7,7 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.codec.http.cookie.DefaultCookie;
 import io.netty.handler.codec.http.cookie.ServerCookieEncoder;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
@@ -55,7 +56,11 @@ public class ServletResponseImpl implements HttpServletResponse {
     @Override
     public String encodeURL(String url) {
         try {
-           return URLEncoder.encode(url,getCharacterEncoding());
+            String characterEncoding = getCharacterEncoding();
+            if (StringUtils.isEmpty(characterEncoding)) {
+                return URLEncoder.encode(url);
+            }
+            return URLEncoder.encode(url, getCharacterEncoding());
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException("Error encoding url!", e);
         }
