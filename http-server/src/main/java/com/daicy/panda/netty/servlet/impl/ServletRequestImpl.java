@@ -11,6 +11,7 @@ import io.netty.handler.codec.http.multipart.InterfaceHttpData;
 import io.netty.handler.ssl.SslHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.boot.web.servlet.server.Session;
 
 import javax.servlet.*;
 import javax.servlet.http.Cookie;
@@ -60,6 +61,33 @@ public class ServletRequestImpl implements HttpServletRequest {
         this.uriParser = new URIParser();
         this.uriParser.parse(originalRequest.getUri());
         parseParameters();
+    }
+
+    private void parseSessionCookiesId() {
+        getCookies();
+        if (null != headCookies) {
+            String sessionCookieName = ServletContextImpl.get().getPandaServerBuilder().getSssionCookieName();
+            for (int i = 0; i < headCookies.length; i++) {
+                Cookie scookie = headCookies[i];
+                if (scookie.getName().equals(sessionCookieName)) {
+                    // Override anything requested in the URL
+                    if (!this.isRequestedSessionIdFromCookie()) {
+                        requestedSessionId =
+                                (scookie.getValue().toString());
+                        requestedSessionCookie = true;
+                        if (log.isDebugEnabled()) {
+                            log.debug(" Requested cookie session id is " +
+                                    this.getRequestedSessionId());
+                        }
+                    } else {
+                        if (!isRequestedSessionIdValid()) {
+                            requestedSessionId =
+                                    (scookie.getValue().toString());
+                        }
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -310,8 +338,7 @@ public class ServletRequestImpl implements HttpServletRequest {
             host = host.trim();
             if (host.startsWith("[")) {
                 host = host.substring(1, host.indexOf(']'));
-            }
-            else if (host.contains(":")) {
+            } else if (host.contains(":")) {
                 host = host.substring(0, host.indexOf(':'));
             }
         }
@@ -502,8 +529,19 @@ public class ServletRequestImpl implements HttpServletRequest {
         return servletPath;
     }
 
+    private String requestedSessionId;
+
+    private boolean requestedSessionCookie = false;
+
     @Override
     public String getRequestedSessionId() {
+        if (StringUtils.isNotBlank(requestedSessionId)) {
+            return requestedSessionId;
+        }
+        parseSessionCookiesId();
+        if (StringUtils.isNotBlank(requestedSessionId)) {
+            return requestedSessionId;
+        }
         SessionImpl session = SessionThreadLocal.get();
         return session != null ? session.getId() : null;
     }
@@ -528,15 +566,34 @@ public class ServletRequestImpl implements HttpServletRequest {
         return null;
     }
 
+    /**
+     * @return <code>true</code> if the session identifier included in this
+     * request identifies a valid session.
+     */
     @Override
     public boolean isRequestedSessionIdValid() {
-        return false;
+        if (requestedSessionId == null) {
+            return false;
+        }
+        SessionImpl session = ServletContextImpl.get().getContext().findSession(requestedSessionId);
+        if ((session == null)) {
+            return false;
+        }
+        return true;
     }
 
+    /**
+     * @return <code>true</code> if the session identifier included in this
+     * request came from a cookie.
+     */
     @Override
     public boolean isRequestedSessionIdFromCookie() {
-        return false;
+        if (requestedSessionId == null) {
+            return false;
+        }
+        return requestedSessionCookie;
     }
+
 
     @Override
     public boolean isRequestedSessionIdFromURL() {

@@ -13,8 +13,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class SessionImpl implements HttpSession {
 
-    public static final String SESSION_ID_KEY = "JSESSIONID";
-
     private String id;
 
     private long creationTime;

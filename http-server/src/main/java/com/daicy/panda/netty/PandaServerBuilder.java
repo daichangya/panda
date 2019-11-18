@@ -16,6 +16,12 @@ import java.util.concurrent.LinkedBlockingQueue;
  */
 @Slf4j
 public class PandaServerBuilder {
+
+    private static final String DEFAULT_SESSION_COOKIE_NAME = "JSESSIONID";
+    private static final String DEFAULT_SESSION_PARAMETER_NAME = "jsessionid";
+
+    private String sssionCookieName = StringUtils.EMPTY;
+
     private int backlog = Constant.DEFAULT_BACKLOG;
 
     private int acceptors = Constant.DEFAULT_ACCEPTOR_COUNT;
@@ -136,6 +142,11 @@ public class PandaServerBuilder {
         return this;
     }
 
+    public PandaServerBuilder sssionCookieName(String sssionCookieName) {
+        this.sssionCookieName = sssionCookieName;
+        return this;
+    }
+
     public InetAddress getInetAddress() {
         return inetAddress;
     }
@@ -193,17 +204,24 @@ public class PandaServerBuilder {
         return maxPacketLength;
     }
 
-
-    public TracingThreadPoolExecutor executor() {
-        return this.executor;
-    }
-
     public int getPort() {
         return port;
     }
 
     public String getContextPath() {
         return contextPath;
+    }
+
+    public String getSssionCookieName() {
+        String result = sssionCookieName;
+        if (StringUtils.isEmpty(result)) {
+            result = DEFAULT_SESSION_COOKIE_NAME;
+        }
+        return result;
+    }
+
+    public TracingThreadPoolExecutor executor() {
+        return this.executor;
     }
 
     public HttpServer build() {
