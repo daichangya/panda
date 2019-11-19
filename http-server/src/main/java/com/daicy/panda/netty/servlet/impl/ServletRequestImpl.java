@@ -11,7 +11,6 @@ import io.netty.handler.codec.http.multipart.InterfaceHttpData;
 import io.netty.handler.ssl.SslHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.boot.web.servlet.server.Session;
 
 import javax.servlet.*;
 import javax.servlet.http.Cookie;
@@ -61,6 +60,7 @@ public class ServletRequestImpl implements HttpServletRequest {
         this.uriParser = new URIParser();
         this.uriParser.parse(originalRequest.getUri());
         parseParameters();
+        parseSessionCookiesId();
     }
 
     private void parseSessionCookiesId() {
@@ -283,12 +283,14 @@ public class ServletRequestImpl implements HttpServletRequest {
 
     @Override
     public RequestDispatcher getRequestDispatcher(String s) {
-        return null;
+        throw new IllegalStateException(
+                "Method 'getRequestDispatcher' not yet implemented!");
     }
 
     @Override
     public String getRealPath(String s) {
-        return null;
+        throw new IllegalStateException(
+                "Method 'getRealPath' not yet implemented!");
     }
 
 
@@ -355,7 +357,7 @@ public class ServletRequestImpl implements HttpServletRequest {
 
     @Override
     public ServletContext getServletContext() {
-        return null;
+        return ServletContextImpl.get();
     }
 
     private boolean asyncStarted = false;
@@ -393,13 +395,14 @@ public class ServletRequestImpl implements HttpServletRequest {
 
     @Override
     public DispatcherType getDispatcherType() {
-        return null;
+        return DispatcherType.REQUEST;
     }
 
 
     @Override
     public String getAuthType() {
-        return null;
+        throw new IllegalStateException(
+                "Method 'getAuthType' not yet implemented!");
     }
 
     @Override
@@ -468,7 +471,8 @@ public class ServletRequestImpl implements HttpServletRequest {
 
     @Override
     public String getPathTranslated() {
-        return null;
+        throw new IllegalStateException(
+                "Method 'getPathTranslated' not yet implemented!");
     }
 
     @Override
@@ -478,7 +482,8 @@ public class ServletRequestImpl implements HttpServletRequest {
 
     @Override
     public String getRemoteUser() {
-        return null;
+        throw new IllegalStateException(
+                "Method 'getRemoteUser' not yet implemented!");
     }
 
     @Override
@@ -488,7 +493,8 @@ public class ServletRequestImpl implements HttpServletRequest {
 
     @Override
     public Principal getUserPrincipal() {
-        return null;
+        throw new IllegalStateException(
+                "Method 'getUserPrincipal' not yet implemented!");
     }
 
     @Override
@@ -538,32 +544,36 @@ public class ServletRequestImpl implements HttpServletRequest {
         if (StringUtils.isNotBlank(requestedSessionId)) {
             return requestedSessionId;
         }
-        parseSessionCookiesId();
-        if (StringUtils.isNotBlank(requestedSessionId)) {
-            return requestedSessionId;
-        }
-        SessionImpl session = SessionThreadLocal.get();
-        return session != null ? session.getId() : null;
+        SessionImpl session = SessionThreadLocal.get(requestedSessionId);
+        requestedSessionId = session != null ? session.getId() : null;
+        return requestedSessionId;
     }
 
     @Override
     public HttpSession getSession() {
-        HttpSession s = SessionThreadLocal.getOrCreate();
+        HttpSession s = SessionThreadLocal.getOrCreate(requestedSessionId);
         return s;
     }
 
     @Override
     public HttpSession getSession(boolean create) {
-        HttpSession session = SessionThreadLocal.get();
+        HttpSession session = SessionThreadLocal.get(requestedSessionId);
         if (session == null && create) {
-            session = SessionThreadLocal.getOrCreate();
+            session = SessionThreadLocal.getOrCreate(requestedSessionId);
         }
         return session;
     }
 
     @Override
     public String changeSessionId() {
-        return null;
+        SessionImpl session = SessionThreadLocal.get(requestedSessionId);
+        if (session == null) {
+            throw new IllegalStateException("coyoteRequest.changeSessionId");
+        }
+        session = ServletContextImpl.get().getContext().changeSessionId(session);
+        SessionThreadLocal.unset();
+        SessionThreadLocal.set(session);
+        return session.getId();
     }
 
     /**
@@ -575,7 +585,7 @@ public class ServletRequestImpl implements HttpServletRequest {
         if (requestedSessionId == null) {
             return false;
         }
-        SessionImpl session = ServletContextImpl.get().getContext().findSession(requestedSessionId);
+        HttpSession session = SessionThreadLocal.get(requestedSessionId);
         if ((session == null)) {
             return false;
         }
@@ -607,31 +617,37 @@ public class ServletRequestImpl implements HttpServletRequest {
 
     @Override
     public boolean authenticate(HttpServletResponse response) throws IOException, ServletException {
-        return false;
+        throw new IllegalStateException(
+                "Method 'authenticate' not yet implemented!");
     }
 
     @Override
     public void login(String username, String password) throws ServletException {
-
+        throw new IllegalStateException(
+                "Method 'login' not yet implemented!");
     }
 
     @Override
     public void logout() throws ServletException {
-
+        throw new IllegalStateException(
+                "Method 'logout' not yet implemented!");
     }
 
     @Override
     public Collection<Part> getParts() throws IOException, ServletException {
-        return null;
+        throw new IllegalStateException(
+                "Method 'getParts' not yet implemented!");
     }
 
     @Override
     public Part getPart(String name) throws IOException, ServletException {
-        return null;
+        throw new IllegalStateException(
+                "Method 'getPart' not yet implemented!");
     }
 
     @Override
     public <T extends HttpUpgradeHandler> T upgrade(Class<T> handlerClass) throws IOException, ServletException {
-        return null;
+        throw new IllegalStateException(
+                "Method 'upgrade' not yet implemented!");
     }
 }

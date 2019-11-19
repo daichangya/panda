@@ -5,6 +5,7 @@ import com.daicy.panda.netty.servlet.impl.filter.FilterMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.servlet.Servlet;
 import java.util.List;
@@ -64,8 +65,11 @@ public class PandaContext {
     }
 
 
-    public SessionImpl createSession() {
-        String sessionId = this.generateNewSessionId();
+    public SessionImpl createSession(String requestedSessionId) {
+        String sessionId = requestedSessionId;
+        if(StringUtils.isEmpty(sessionId)){
+            sessionId = this.generateNewSessionId();
+        }
         log.debug("Creating new session with id {}", sessionId);
 
         SessionImpl session = new SessionImpl(sessionId);
@@ -76,6 +80,15 @@ public class PandaContext {
     public void destroySession(String sessionId) {
         log.debug("Destroying session with id {}", sessionId);
         sessions.remove(sessionId);
+    }
+
+    public SessionImpl changeSessionId(SessionImpl session) {
+        log.debug("changeSessionId session with id {}", session.getId());
+        String sessionId = this.generateNewSessionId();
+        session.setId(sessionId);
+        sessions.remove(sessionId);
+        sessions.put(sessionId,session);
+        return session;
     }
 
     public SessionImpl findSession(String sessionId) {

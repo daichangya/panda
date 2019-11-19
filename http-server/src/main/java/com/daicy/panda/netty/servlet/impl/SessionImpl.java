@@ -49,6 +49,10 @@ public class SessionImpl implements HttpSession {
         return this.id;
     }
 
+    public void setId(String id) {
+        this.id = id;
+    }
+
     @Override
     public long getLastAccessedTime() {
         return this.lastAccessedTime;
