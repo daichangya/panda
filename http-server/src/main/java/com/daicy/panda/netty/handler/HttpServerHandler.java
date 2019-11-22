@@ -57,6 +57,9 @@ public class HttpServerHandler extends ChannelInboundHandlerAdapter {
             ChannelThreadLocal.set(ctx.channel());
             if (msg instanceof FullHttpRequest) {
                 FullHttpRequest request = (FullHttpRequest) msg;
+                if (HttpUtil.is100ContinueExpected(request)) { //请求头包含Expect: 100-continue
+                    ctx.write(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.CONTINUE), ctx.voidPromise());
+                }
                 FullHttpResponse response = new DefaultFullHttpResponse(request.protocolVersion(), HttpResponseStatus.OK);
                 HttpUtil.setKeepAlive(response, HttpUtil.isKeepAlive(request));
                 ServletRequestImpl servletRequest = new ServletRequestImpl(request);

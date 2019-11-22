@@ -7,6 +7,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.cookie.DefaultCookie;
 import io.netty.handler.codec.http.cookie.ServerCookieEncoder;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.servlet.ServletOutputStream;
@@ -26,6 +27,7 @@ import java.util.Locale;
  * @description: com.daicy.panda.http
  * @date:19-11-8
  */
+@Slf4j
 public class ServletResponseImpl implements HttpServletResponse {
 
     private final FullHttpResponse originalResponse;
@@ -38,7 +40,7 @@ public class ServletResponseImpl implements HttpServletResponse {
 
     private boolean responseCommited = false;
 
-    public ServletResponseImpl(ChannelHandlerContext ctx,FullHttpResponse originalResponse) {
+    public ServletResponseImpl(ChannelHandlerContext ctx, FullHttpResponse originalResponse) {
         this.ctx = ctx;
         this.originalResponse = originalResponse;
         this.servletOutputStream = new ServletOutputStreamImpl(originalResponse);
@@ -102,32 +104,32 @@ public class ServletResponseImpl implements HttpServletResponse {
 
     @Override
     public void setDateHeader(String name, long date) {
-        this.originalResponse.headers().set(name,date);
+        this.originalResponse.headers().set(name, date);
     }
 
     @Override
     public void addDateHeader(String name, long date) {
-        this.originalResponse.headers().add(name,date);
+        this.originalResponse.headers().add(name, date);
     }
 
     @Override
     public void setHeader(String name, String value) {
-        this.originalResponse.headers().set(name,value);
+        this.originalResponse.headers().set(name, value);
     }
 
     @Override
     public void addHeader(String name, String value) {
-        this.originalResponse.headers().add(name,value);
+        this.originalResponse.headers().add(name, value);
     }
 
     @Override
     public void setIntHeader(String name, int value) {
-        this.originalResponse.headers().setInt(name,value);
+        this.originalResponse.headers().setInt(name, value);
     }
 
     @Override
     public void addIntHeader(String name, int value) {
-        this.originalResponse.headers().addInt(name,value);
+        this.originalResponse.headers().addInt(name, value);
     }
 
     @Override
@@ -190,7 +192,7 @@ public class ServletResponseImpl implements HttpServletResponse {
     }
 
     @Override
-    public ServletOutputStreamImpl getOutputStream()  {
+    public ServletOutputStreamImpl getOutputStream() throws IOException {
         return servletOutputStream;
     }
 
@@ -258,14 +260,13 @@ public class ServletResponseImpl implements HttpServletResponse {
     }
 
 
-    public void close(){
+    public void close() {
         boolean isKeepAlive = HttpUtil.isKeepAlive(originalResponse);
         this.responseCommited = true;
         if (isKeepAlive) {
-            setContentLength(this.getOutputStream().getBufferSize());
+            setContentLength(originalResponse.content().readableBytes());
         }
-        ChannelFuture channelFuture = ctx.channel().writeAndFlush(originalResponse);
-
+        ChannelFuture channelFuture = ctx.writeAndFlush(originalResponse);
         if (!isKeepAlive && channelFuture != null) {
             channelFuture.addListener(ChannelFutureListener.CLOSE);
         }

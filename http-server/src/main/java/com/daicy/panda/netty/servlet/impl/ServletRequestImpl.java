@@ -389,7 +389,7 @@ public class ServletRequestImpl implements HttpServletRequest {
 
     @Override
     public boolean isAsyncSupported() {
-        return false;
+        return true;
     }
 
     @Override

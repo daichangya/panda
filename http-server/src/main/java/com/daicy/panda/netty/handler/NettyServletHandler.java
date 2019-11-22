@@ -1,7 +1,5 @@
 package com.daicy.panda.netty.handler;
 
-import com.daicy.panda.netty.PandaStatus;
-import com.daicy.panda.netty.TracingThreadPoolExecutor;
 import com.daicy.panda.netty.servlet.impl.ServletContextImpl;
 import com.daicy.panda.netty.servlet.impl.ServletRequestImpl;
 import com.daicy.panda.netty.servlet.impl.ServletResponseImpl;
@@ -38,7 +36,9 @@ public class NettyServletHandler {
         } catch (Exception e) {
             log.error("controller invoke uri:{}", servletRequestImpl.getRequestURI(), e);
         } finally {
-            servletResponseImpl.close();
+            if (!servletRequest.isAsyncStarted()) {
+                servletResponseImpl.close();
+            }
         }
     }
 
