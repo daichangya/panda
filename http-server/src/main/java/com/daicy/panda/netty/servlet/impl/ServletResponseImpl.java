@@ -266,7 +266,7 @@ public class ServletResponseImpl implements HttpServletResponse {
         if (isKeepAlive) {
             setContentLength(originalResponse.content().readableBytes());
         }
-        ChannelFuture channelFuture = ctx.writeAndFlush(originalResponse);
+        ChannelFuture channelFuture = ctx.channel().writeAndFlush(originalResponse);
         if (!isKeepAlive && channelFuture != null) {
             channelFuture.addListener(ChannelFutureListener.CLOSE);
         }
