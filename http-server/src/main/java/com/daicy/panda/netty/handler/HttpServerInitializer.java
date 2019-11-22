@@ -47,6 +47,6 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
 //        pipeline.addLast(new HttpResponseEncoder());
         // Remove the following line if you don't want automatic content compression.
         //pipeline.addLast(new HttpContentCompressor());
-        pipeline.addLast(new HttpServerHandler(ServletContextImpl.get().getPandaServerBuilder()));
+        pipeline.addLast(new HttpServerHandler());
     }
 }

@@ -15,32 +15,22 @@
  */
 package com.daicy.panda.netty.handler;
 
-import com.daicy.panda.netty.PandaServerBuilder;
 import com.daicy.panda.netty.PandaStatus;
-import com.daicy.panda.netty.TracingThreadPoolExecutor;
 import com.daicy.panda.netty.servlet.ChannelThreadLocal;
-import com.daicy.panda.netty.servlet.impl.ServletContextImpl;
 import com.daicy.panda.netty.servlet.impl.ServletRequestImpl;
 import com.daicy.panda.netty.servlet.impl.ServletResponseImpl;
-import com.daicy.panda.netty.servlet.impl.filter.FilterChainFactory;
-import com.daicy.panda.netty.servlet.impl.filter.FilterChainImpl;
-import io.netty.channel.*;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.http.*;
 import io.netty.util.ReferenceCountUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.web.servlet.DispatcherServletAutoConfiguration;
-
-import javax.servlet.Servlet;
-import javax.servlet.http.HttpServletResponse;
 
 @Slf4j
 public class HttpServerHandler extends ChannelInboundHandlerAdapter {
 
-    private final TracingThreadPoolExecutor asyncExecutor;
     private final PandaStatus status;
 
-    public HttpServerHandler(PandaServerBuilder pandaServerBuilder) {
-        this.asyncExecutor = pandaServerBuilder.executor();
+    public HttpServerHandler() {
         this.status = PandaStatus.get();
     }
 
@@ -51,50 +41,27 @@ public class HttpServerHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
-        status.totalRequestsIncrement();
-        if (asyncExecutor == null) {
-            handleRequest(ctx, msg);
-            return;
-        }
-
-        asyncExecutor.execute(() -> {
-            handleRequest(ctx, msg);
-        });
-    }
-
-    private void handleRequest(ChannelHandlerContext ctx, Object msg) {
+//        status.totalRequestsIncrement();
+//        if (asyncExecutor == null) {
+//            handleRequest(ctx, msg);
+//            return;
+//        }
+//
+//        asyncExecutor.execute(() -> {
+//            handleRequest(ctx, msg);
+//        });
+//    }
+//
+//    private void handleRequest(ChannelHandlerContext ctx, Object msg) {
         try {
             ChannelThreadLocal.set(ctx.channel());
             if (msg instanceof FullHttpRequest) {
                 FullHttpRequest request = (FullHttpRequest) msg;
-                boolean isKeepAlive = HttpUtil.isKeepAlive(request);
                 FullHttpResponse response = new DefaultFullHttpResponse(request.protocolVersion(), HttpResponseStatus.OK);
+                HttpUtil.setKeepAlive(response, HttpUtil.isKeepAlive(request));
                 ServletRequestImpl servletRequest = new ServletRequestImpl(request);
-                ServletResponseImpl servletResponse = new ServletResponseImpl(response);
-
-                try {
-                    Servlet servlet = ServletContextImpl.get().getServlet(DispatcherServletAutoConfiguration.DEFAULT_DISPATCHER_SERVLET_BEAN_NAME);
-                    FilterChainImpl chain = FilterChainFactory.createFilterChain(servletRequest, servlet);
-                    chain.doFilter(servletRequest, servletResponse);
-                    if (servletResponse.getStatus() == HttpServletResponse.SC_OK) {
-                        servlet.service(servletRequest, servletResponse);
-                    }
-                } catch (Exception e) {
-                    log.error("controller invoke uri:{}", request.uri(), e);
-                }
-
-                if (isKeepAlive) {
-                    // Add 'Content-Length' header only for a keep-alive connection.
-                    response.headers().setInt(HttpHeaderNames.CONTENT_LENGTH, response.content().readableBytes());
-                    // Add keep alive header as per:
-                    // - http://www.w3.org/Protocols/HTTP/1.1/draft-ietf-http-v11-spec-01.html#Connection
-                    response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
-                }
-                ChannelFuture channelFuture = ctx.channel().writeAndFlush(response);
-
-                if (!isKeepAlive && channelFuture != null) {
-                    channelFuture.addListener(ChannelFutureListener.CLOSE);
-                }
+                ServletResponseImpl servletResponse = new ServletResponseImpl(ctx, response);
+                NettyServletHandler.handleRequest(servletRequest,servletResponse);
             }
         } finally {
             status.handledRequestsIncrement();

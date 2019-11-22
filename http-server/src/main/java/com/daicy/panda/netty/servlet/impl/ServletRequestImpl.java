@@ -383,9 +383,13 @@ public class ServletRequestImpl implements HttpServletRequest {
         return asyncStarted;
     }
 
+    public void setAsyncStarted(boolean asyncStarted) {
+        this.asyncStarted = asyncStarted;
+    }
+
     @Override
     public boolean isAsyncSupported() {
-        return true;
+        return false;
     }
 
     @Override
@@ -491,10 +495,15 @@ public class ServletRequestImpl implements HttpServletRequest {
         return false;
     }
 
+    private PrincipalImpl principal;
+
     @Override
     public Principal getUserPrincipal() {
-        throw new IllegalStateException(
-                "Method 'getUserPrincipal' not yet implemented!");
+        if(principal instanceof PrincipalImpl){
+            throw new IllegalStateException(
+                    "Method 'getUserPrincipal' not yet implemented!");
+        }
+        return principal;
     }
 
     @Override
@@ -617,6 +626,9 @@ public class ServletRequestImpl implements HttpServletRequest {
 
     @Override
     public boolean authenticate(HttpServletResponse response) throws IOException, ServletException {
+        if (response.isCommitted()) {
+            throw new IllegalStateException("coyoteRequest.authenticate.ise");
+        }
         throw new IllegalStateException(
                 "Method 'authenticate' not yet implemented!");
     }

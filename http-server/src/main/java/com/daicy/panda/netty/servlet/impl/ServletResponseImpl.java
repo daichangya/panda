@@ -1,10 +1,10 @@
 package com.daicy.panda.netty.servlet.impl;
 
 import com.google.common.collect.Lists;
-import io.netty.handler.codec.http.FullHttpResponse;
-import io.netty.handler.codec.http.HttpHeaderNames;
-import io.netty.handler.codec.http.HttpResponseStatus;
-import io.netty.handler.codec.http.HttpUtil;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.cookie.DefaultCookie;
 import io.netty.handler.codec.http.cookie.ServerCookieEncoder;
 import org.apache.commons.lang3.StringUtils;
@@ -32,11 +32,14 @@ public class ServletResponseImpl implements HttpServletResponse {
 
     private ServletOutputStreamImpl servletOutputStream;
 
+    private ChannelHandlerContext ctx;
+
     private PrintWriter printWriter;
 
     private boolean responseCommited = false;
 
-    public ServletResponseImpl(FullHttpResponse originalResponse) {
+    public ServletResponseImpl(ChannelHandlerContext ctx,FullHttpResponse originalResponse) {
+        this.ctx = ctx;
         this.originalResponse = originalResponse;
         this.servletOutputStream = new ServletOutputStreamImpl(originalResponse);
         this.printWriter = new PrintWriter(servletOutputStream);
@@ -187,7 +190,7 @@ public class ServletResponseImpl implements HttpServletResponse {
     }
 
     @Override
-    public ServletOutputStream getOutputStream() throws IOException {
+    public ServletOutputStreamImpl getOutputStream()  {
         return servletOutputStream;
     }
 
@@ -209,6 +212,11 @@ public class ServletResponseImpl implements HttpServletResponse {
     @Override
     public void flushBuffer() throws IOException {
         this.getWriter().flush();
+        boolean isKeepAlive = HttpUtil.isKeepAlive(originalResponse);
+        if (isKeepAlive) {
+            setContentLength(this.getOutputStream().getBufferSize());
+        }
+        ctx.channel().writeAndFlush(originalResponse);
         this.responseCommited = true;
     }
 
@@ -247,5 +255,19 @@ public class ServletResponseImpl implements HttpServletResponse {
     @Override
     public Locale getLocale() {
         return null;
+    }
+
+
+    public void close(){
+        boolean isKeepAlive = HttpUtil.isKeepAlive(originalResponse);
+        this.responseCommited = true;
+        if (isKeepAlive) {
+            setContentLength(this.getOutputStream().getBufferSize());
+        }
+        ChannelFuture channelFuture = ctx.channel().writeAndFlush(originalResponse);
+
+        if (!isKeepAlive && channelFuture != null) {
+            channelFuture.addListener(ChannelFutureListener.CLOSE);
+        }
     }
 }
