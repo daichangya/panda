@@ -3,6 +3,7 @@ package com.daicy.panda.netty.servlet.impl.filter;
 import com.daicy.panda.netty.servlet.impl.ServletContextImpl;
 import org.apache.commons.collections.CollectionUtils;
 
+import javax.servlet.DispatcherType;
 import javax.servlet.Servlet;
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
@@ -44,6 +45,8 @@ public class FilterChainFactory {
         if (CollectionUtils.isEmpty(filterMapList))
             return filterChain;
 
+        // Acquire the information we will need to match filter mappings
+        DispatcherType dispatcher = request.getDispatcherType();
 
         String requestPath = request.getRequestURI();
 
@@ -52,6 +55,10 @@ public class FilterChainFactory {
         // Add the relevant path-mapped filters to this filter chain
         for (int i = 0; i < filterMapList.size(); i++) {
             FilterMap filterMap = filterMapList.get(i);
+            if (!matchDispatcher(filterMap ,dispatcher)) {
+                continue;
+            }
+
             if (!matchFiltersURL(filterMap,requestPath)) {
                 continue;
             }
@@ -198,4 +205,38 @@ public class FilterChainFactory {
 
     }
 
+    /**
+     * Convenience method which returns true if  the dispatcher type
+     * matches the dispatcher types specified in the FilterMap
+     */
+    private static boolean matchDispatcher(FilterMap filterMap, DispatcherType type) {
+        switch (type) {
+            case FORWARD :
+                if ((filterMap.getDispatcherMapping() & FilterMap.FORWARD) != 0) {
+                    return true;
+                }
+                break;
+            case INCLUDE :
+                if ((filterMap.getDispatcherMapping() & FilterMap.INCLUDE) != 0) {
+                    return true;
+                }
+                break;
+            case REQUEST :
+                if ((filterMap.getDispatcherMapping() & FilterMap.REQUEST) != 0) {
+                    return true;
+                }
+                break;
+            case ERROR :
+                if ((filterMap.getDispatcherMapping() & FilterMap.ERROR) != 0) {
+                    return true;
+                }
+                break;
+            case ASYNC :
+                if ((filterMap.getDispatcherMapping() & FilterMap.ASYNC) != 0) {
+                    return true;
+                }
+                break;
+        }
+        return false;
+    }
 }

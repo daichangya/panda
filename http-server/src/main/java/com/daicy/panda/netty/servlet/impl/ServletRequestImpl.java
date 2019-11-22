@@ -369,6 +369,7 @@ public class ServletRequestImpl implements HttpServletRequest {
     @Override
     public AsyncContext startAsync() throws IllegalStateException {
         this.asyncStarted = true;
+        this.setDispatcherType(DispatcherType.ASYNC);
         this.asyncContext = new AsyncContextImpl(this, null);
         return this.asyncContext;
     }
@@ -376,6 +377,7 @@ public class ServletRequestImpl implements HttpServletRequest {
     @Override
     public AsyncContext startAsync(ServletRequest servletRequest, ServletResponse servletResponse) throws IllegalStateException {
         this.asyncStarted = true;
+        this.setDispatcherType(DispatcherType.ASYNC);
         this.asyncContext = new AsyncContextImpl(servletRequest, servletResponse);
         return this.asyncContext;
     }
@@ -399,9 +401,15 @@ public class ServletRequestImpl implements HttpServletRequest {
         return asyncContext;
     }
 
+    private DispatcherType dispatcherType = DispatcherType.REQUEST;
+
+    public void setDispatcherType(DispatcherType dispatcherType) {
+        this.dispatcherType = dispatcherType;
+    }
+
     @Override
     public DispatcherType getDispatcherType() {
-        return DispatcherType.REQUEST;
+        return dispatcherType;
     }
 
 
@@ -488,8 +496,7 @@ public class ServletRequestImpl implements HttpServletRequest {
 
     @Override
     public String getRemoteUser() {
-        throw new IllegalStateException(
-                "Method 'getRemoteUser' not yet implemented!");
+       return null;
     }
 
     @Override
