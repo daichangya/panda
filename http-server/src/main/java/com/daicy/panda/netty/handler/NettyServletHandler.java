@@ -24,6 +24,19 @@ public class NettyServletHandler {
 
 
     public static void handleRequest(ServletRequest servletRequest, ServletResponse servletResponse) {
+        handleRequest0(servletRequest, servletResponse);
+//        TracingThreadPoolExecutor asyncExecutor = ServletContextImpl.get().getPandaServerBuilder().executor();
+//        if (asyncExecutor == null) {
+//            handleRequest0(servletRequest, servletResponse);
+//            return;
+//        }
+//
+//        asyncExecutor.execute(() -> {
+//            handleRequest0(servletRequest, servletResponse);
+//        });
+    }
+
+    private static void handleRequest0(ServletRequest servletRequest, ServletResponse servletResponse) {
         ServletRequestImpl servletRequestImpl = (ServletRequestImpl) servletRequest;
         ServletResponseImpl servletResponseImpl = (ServletResponseImpl) servletResponse;
         try {

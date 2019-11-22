@@ -1,9 +1,9 @@
 package com.daicy.panda.netty.servlet.impl;
 
-import com.daicy.panda.netty.servlet.ChannelThreadLocal;
 import com.daicy.panda.netty.servlet.SessionThreadLocal;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.multipart.Attribute;
 import io.netty.handler.codec.http.multipart.HttpPostRequestDecoder;
@@ -47,8 +47,10 @@ public class ServletRequestImpl implements HttpServletRequest {
 
     private Cookie[] headCookies = null;
 
+    private final ChannelHandlerContext ctx;
 
-    public ServletRequestImpl(HttpRequest originalRequest) {
+    public ServletRequestImpl(ChannelHandlerContext ctx,HttpRequest originalRequest) {
+        this.ctx = ctx;
         this.originalRequest = originalRequest;
         if (originalRequest instanceof FullHttpRequest) {
             this.inputStream = new ServletInputStreamImpl((FullHttpRequest) originalRequest);
@@ -218,7 +220,7 @@ public class ServletRequestImpl implements HttpServletRequest {
 
     @Override
     public boolean isSecure() {
-        return ChannelThreadLocal.get().pipeline().get(SslHandler.class) != null;
+        return ctx.pipeline().get(SslHandler.class) != null;
     }
 
     @Override
@@ -296,28 +298,28 @@ public class ServletRequestImpl implements HttpServletRequest {
 
     @Override
     public String getRemoteAddr() {
-        InetSocketAddress addr = (InetSocketAddress) ChannelThreadLocal.get()
+        InetSocketAddress addr = (InetSocketAddress) ctx.channel()
                 .remoteAddress();
         return addr.getAddress().getHostAddress();
     }
 
     @Override
     public String getRemoteHost() {
-        InetSocketAddress addr = (InetSocketAddress) ChannelThreadLocal.get()
+        InetSocketAddress addr = (InetSocketAddress) ctx.channel()
                 .remoteAddress();
         return addr.getHostName();
     }
 
     @Override
     public int getRemotePort() {
-        InetSocketAddress addr = (InetSocketAddress) ChannelThreadLocal.get()
+        InetSocketAddress addr = (InetSocketAddress) ctx.channel()
                 .remoteAddress();
         return addr.getPort();
     }
 
     @Override
     public String getLocalAddr() {
-        InetSocketAddress addr = (InetSocketAddress) ChannelThreadLocal.get()
+        InetSocketAddress addr = (InetSocketAddress) ctx.channel()
                 .localAddress();
         return addr.getAddress().getHostAddress();
     }
@@ -349,7 +351,7 @@ public class ServletRequestImpl implements HttpServletRequest {
 
     @Override
     public int getServerPort() {
-        InetSocketAddress addr = (InetSocketAddress) ChannelThreadLocal.get()
+        InetSocketAddress addr = (InetSocketAddress) ctx.channel()
                 .localAddress();
         return addr.getPort();
     }

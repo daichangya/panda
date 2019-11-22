@@ -16,13 +16,11 @@
 package com.daicy.panda.netty.handler;
 
 import com.daicy.panda.netty.PandaStatus;
-import com.daicy.panda.netty.servlet.ChannelThreadLocal;
 import com.daicy.panda.netty.servlet.impl.ServletRequestImpl;
 import com.daicy.panda.netty.servlet.impl.ServletResponseImpl;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.http.*;
-import io.netty.util.ReferenceCountUtil;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -41,7 +39,7 @@ public class HttpServerHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
-//        status.totalRequestsIncrement();
+        status.totalRequestsIncrement();
 //        if (asyncExecutor == null) {
 //            handleRequest(ctx, msg);
 //            return;
@@ -54,7 +52,6 @@ public class HttpServerHandler extends ChannelInboundHandlerAdapter {
 //
 //    private void handleRequest(ChannelHandlerContext ctx, Object msg) {
         try {
-            ChannelThreadLocal.set(ctx.channel());
             if (msg instanceof FullHttpRequest) {
                 FullHttpRequest request = (FullHttpRequest) msg;
                 if (HttpUtil.is100ContinueExpected(request)) { //请求头包含Expect: 100-continue
@@ -62,14 +59,12 @@ public class HttpServerHandler extends ChannelInboundHandlerAdapter {
                 }
                 FullHttpResponse response = new DefaultFullHttpResponse(request.protocolVersion(), HttpResponseStatus.OK);
                 HttpUtil.setKeepAlive(response, HttpUtil.isKeepAlive(request));
-                ServletRequestImpl servletRequest = new ServletRequestImpl(request);
+                ServletRequestImpl servletRequest = new ServletRequestImpl(ctx,request);
                 ServletResponseImpl servletResponse = new ServletResponseImpl(ctx, response);
                 NettyServletHandler.handleRequest(servletRequest,servletResponse);
             }
         } finally {
             status.handledRequestsIncrement();
-            ChannelThreadLocal.unset();
-            ReferenceCountUtil.release(msg);
         }
     }
 

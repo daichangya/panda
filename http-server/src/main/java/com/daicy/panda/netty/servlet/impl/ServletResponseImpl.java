@@ -214,11 +214,11 @@ public class ServletResponseImpl implements HttpServletResponse {
     @Override
     public void flushBuffer() throws IOException {
         this.getWriter().flush();
-        boolean isKeepAlive = HttpUtil.isKeepAlive(originalResponse);
-        if (isKeepAlive) {
-            setContentLength(this.getOutputStream().getBufferSize());
-        }
-        ctx.channel().writeAndFlush(originalResponse);
+//        boolean isKeepAlive = HttpUtil.isKeepAlive(originalResponse);
+//        if (isKeepAlive) {
+//            setContentLength(this.getOutputStream().getBufferSize());
+//        }
+//        ctx.channel().writeAndFlush(originalResponse);
         this.responseCommited = true;
     }
 

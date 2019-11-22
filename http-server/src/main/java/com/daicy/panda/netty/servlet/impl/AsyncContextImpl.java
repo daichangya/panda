@@ -67,7 +67,7 @@ public class AsyncContextImpl implements AsyncContext {
     @Override
     public void dispatch(ServletContext context, String path) {
         this.dispatchedPath = path;
-        addListener(new AsyncListenerImpl());
+//        addListener(new AsyncListenerImpl());
         Runnable runnable = new Runnable() {
             @Override
             public void run() {
@@ -75,6 +75,7 @@ public class AsyncContextImpl implements AsyncContext {
                 complete();
             }
         };
+        start(runnable);
     }
 
     public String getDispatchedPath() {
