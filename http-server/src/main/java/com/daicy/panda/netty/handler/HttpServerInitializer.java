@@ -38,9 +38,9 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
         if (sslCtx != null) {
             pipeline.addLast(sslCtx.newHandler(ch.alloc()));
         }
-        pipeline.addLast(new HttpServerCodec());
+        pipeline.addLast(new HttpServerCodec(4096, 8192, 8192, false));
         // Uncomment the following line if you don't want to handle HttpChunks.
-        pipeline.addLast(new HttpObjectAggregator(65536));
+        pipeline.addLast(new HttpObjectAggregator(100 * 1024));
 //        pipeline.addLast(new ChunkedWriteHandler());
 //        pipeline.addLast(new HttpStaticFileServerHandler());
 

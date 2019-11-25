@@ -59,9 +59,9 @@ public class HttpServerHandler extends ChannelInboundHandlerAdapter {
                 }
                 FullHttpResponse response = new DefaultFullHttpResponse(request.protocolVersion(), HttpResponseStatus.OK);
                 HttpUtil.setKeepAlive(response, HttpUtil.isKeepAlive(request));
-                ServletRequestImpl servletRequest = new ServletRequestImpl(ctx,request);
+                ServletRequestImpl servletRequest = new ServletRequestImpl(ctx, request);
                 ServletResponseImpl servletResponse = new ServletResponseImpl(ctx, response);
-                NettyServletHandler.handleRequest(servletRequest,servletResponse);
+                NettyServletHandler.handleRequest(servletRequest, servletResponse);
             }
         } finally {
             status.handledRequestsIncrement();

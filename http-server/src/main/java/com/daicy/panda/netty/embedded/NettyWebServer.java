@@ -9,6 +9,7 @@ import org.springframework.boot.web.server.WebServerException;
 import org.springframework.boot.web.servlet.ServletContextInitializer;
 
 import javax.servlet.ServletException;
+import java.util.concurrent.CompletionStage;
 
 /**
  * @author: create by daichangya
@@ -40,33 +41,31 @@ public class NettyWebServer implements WebServer {
 
     @Override
     public void start() throws WebServerException {
-        httpServer.start();
-        Thread awaitThread = new Thread("netty-server") {
-            @Override
-            public void run() {
-                httpServer.run();
-            }
-
-        };
-        awaitThread.setContextClassLoader(getClass().getClassLoader());
-        awaitThread.setDaemon(false);
-        awaitThread.start();
-        logger.info("Netty started on port(s): " + getPort());
+        httpServer.start()
+                .thenAccept(ws -> {
+                    System.out.println(
+                            "Netty server is up! http://localhost:" + ws.getPort());
+                    ws.whenShutdown().thenRun(()
+                            -> System.out.println("Netty server is DOWN. Good bye!"));
+                })
+                .exceptionally(t -> {
+                    System.err.println("Startup failed: " + t.getMessage());
+                    t.printStackTrace(System.err);
+                    return null;
+                });
     }
 
 
     @Override
     public void stop() throws WebServerException {
         if (this.httpServer != null) {
-            httpServer.getChannel().close();
-            httpServer.stop();
-            this.httpServer = null;
+            httpServer.shutdown();
         }
     }
 
     @Override
     public int getPort() {
-        return httpServer.address().getPort();
+        return httpServer.getPort();
     }
 
 
