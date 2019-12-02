@@ -1,12 +1,14 @@
 package com.daicy.panda.netty.servlet.impl;
 
 import com.google.common.collect.Lists;
-import io.netty.handler.codec.http.FullHttpResponse;
-import io.netty.handler.codec.http.HttpHeaderNames;
-import io.netty.handler.codec.http.HttpResponseStatus;
-import io.netty.handler.codec.http.HttpUtil;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.cookie.DefaultCookie;
 import io.netty.handler.codec.http.cookie.ServerCookieEncoder;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
@@ -25,17 +27,21 @@ import java.util.Locale;
  * @description: com.daicy.panda.http
  * @date:19-11-8
  */
+@Slf4j
 public class ServletResponseImpl implements HttpServletResponse {
 
     private final FullHttpResponse originalResponse;
 
     private ServletOutputStreamImpl servletOutputStream;
 
+    private ChannelHandlerContext ctx;
+
     private PrintWriter printWriter;
 
     private boolean responseCommited = false;
 
-    public ServletResponseImpl(FullHttpResponse originalResponse) {
+    public ServletResponseImpl(ChannelHandlerContext ctx, FullHttpResponse originalResponse) {
+        this.ctx = ctx;
         this.originalResponse = originalResponse;
         this.servletOutputStream = new ServletOutputStreamImpl(originalResponse);
         this.printWriter = new PrintWriter(servletOutputStream);
@@ -55,7 +61,11 @@ public class ServletResponseImpl implements HttpServletResponse {
     @Override
     public String encodeURL(String url) {
         try {
-           return URLEncoder.encode(url,getCharacterEncoding());
+            String characterEncoding = getCharacterEncoding();
+            if (StringUtils.isEmpty(characterEncoding)) {
+                return URLEncoder.encode(url);
+            }
+            return URLEncoder.encode(url, getCharacterEncoding());
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException("Error encoding url!", e);
         }
@@ -94,32 +104,32 @@ public class ServletResponseImpl implements HttpServletResponse {
 
     @Override
     public void setDateHeader(String name, long date) {
-        this.originalResponse.headers().set(name,date);
+        this.originalResponse.headers().set(name, date);
     }
 
     @Override
     public void addDateHeader(String name, long date) {
-        this.originalResponse.headers().add(name,date);
+        this.originalResponse.headers().add(name, date);
     }
 
     @Override
     public void setHeader(String name, String value) {
-        this.originalResponse.headers().set(name,value);
+        this.originalResponse.headers().set(name, value);
     }
 
     @Override
     public void addHeader(String name, String value) {
-        this.originalResponse.headers().add(name,value);
+        this.originalResponse.headers().add(name, value);
     }
 
     @Override
     public void setIntHeader(String name, int value) {
-        this.originalResponse.headers().setInt(name,value);
+        this.originalResponse.headers().setInt(name, value);
     }
 
     @Override
     public void addIntHeader(String name, int value) {
-        this.originalResponse.headers().addInt(name,value);
+        this.originalResponse.headers().addInt(name, value);
     }
 
     @Override
@@ -182,7 +192,7 @@ public class ServletResponseImpl implements HttpServletResponse {
     }
 
     @Override
-    public ServletOutputStream getOutputStream() throws IOException {
+    public ServletOutputStreamImpl getOutputStream() throws IOException {
         return servletOutputStream;
     }
 
@@ -204,6 +214,11 @@ public class ServletResponseImpl implements HttpServletResponse {
     @Override
     public void flushBuffer() throws IOException {
         this.getWriter().flush();
+//        boolean isKeepAlive = HttpUtil.isKeepAlive(originalResponse);
+//        if (isKeepAlive) {
+//            setContentLength(this.getOutputStream().getBufferSize());
+//        }
+//        ctx.channel().writeAndFlush(originalResponse);
         this.responseCommited = true;
     }
 
@@ -242,5 +257,18 @@ public class ServletResponseImpl implements HttpServletResponse {
     @Override
     public Locale getLocale() {
         return null;
+    }
+
+
+    public void close() {
+        boolean isKeepAlive = HttpUtil.isKeepAlive(originalResponse);
+        this.responseCommited = true;
+        if (isKeepAlive) {
+            setContentLength(originalResponse.content().readableBytes());
+        }
+        ChannelFuture channelFuture = ctx.channel().writeAndFlush(originalResponse);
+        if (!isKeepAlive && channelFuture != null) {
+            channelFuture.addListener(ChannelFutureListener.CLOSE);
+        }
     }
 }

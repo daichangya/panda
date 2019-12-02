@@ -9,7 +9,7 @@
 	</parent>
 	<groupId>com.daicy.panda</groupId>
 	<artifactId>parent</artifactId>
-	<version>${revision}</version>
+	<version>6.0.3-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<description>Http Sever</description>
 	<modules>
@@ -18,7 +18,7 @@
 	</modules>
 
 	<properties>
-		<revision>6.0.1-SNAPSHOT</revision>
+		<revision>6.0.3-SNAPSHOT</revision>
 		<maven-compiler-plugin.version>3.7.0</maven-compiler-plugin.version>
 		<lombok.version>1.18.8</lombok.version>
 		<commons-io.version>2.0.1</commons-io.version>
@@ -44,6 +44,38 @@
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
+
+
+
+	<build>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-compiler-plugin</artifactId>
+					<version>${maven-compiler-plugin.version}</version>
+					<configuration>
+						<source>1.8</source>
+						<target>1.8</target>
+					</configuration>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-source-plugin</artifactId>
+					<version>3.0.1</version>
+					<executions>
+						<execution>
+							<id>attach-sources</id>
+							<goals>
+								<goal>jar</goal>
+							</goals>
+						</execution>
+					</executions>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+	</build>
+
 
 	<distributionManagement>
 		<repository>

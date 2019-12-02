@@ -16,27 +16,21 @@
 package com.daicy.panda.netty;
 
 import com.daicy.panda.netty.handler.HttpServerInitializer;
-import com.daicy.panda.netty.servlet.impl.PandaContext;
 import com.daicy.panda.netty.servlet.impl.ServletContextImpl;
-import com.daicy.panda.util.SpringAppContextUtil;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.DatagramChannel;
-import io.netty.channel.socket.ServerSocketChannel;
-import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.handler.logging.LogLevel;
-import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.context.support.XmlWebApplicationContext;
 
-import java.net.InetSocketAddress;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 /**
  * An HTTP server that sends back the content of the received HTTP request
@@ -52,11 +46,31 @@ public final class HttpServer {
 
     private Channel channel;
 
+    private EventLoopGroup bossGroup;
+    private EventLoopGroup workerGroup;
+
+    private final CompletableFuture<HttpServer> startFuture = new CompletableFuture<>();
+    private final CompletableFuture<HttpServer> shutdownFuture = new CompletableFuture<>();
+    private final CompletableFuture<HttpServer> channelsUpFuture = new CompletableFuture<>();
+    private final CompletableFuture<HttpServer> channelsCloseFuture = new CompletableFuture<>();
+
 
     public static void main(String[] args) throws Exception {
         HttpServer httpServer = PandaServerBuilder.forPort(PORT).build();
-        httpServer.createConfig();
-        httpServer.start();
+//        httpServer.createConfig();
+        httpServer.start()
+                .thenAccept(ws -> {
+                    System.out.println(
+                            "WEB server is up! http://localhost:" + ws.getPort());
+                    ws.whenShutdown().thenRun(()
+                            -> System.out.println("WEB server is DOWN. Good bye!"));
+                })
+                .exceptionally(t -> {
+                    System.err.println("Startup failed: " + t.getMessage());
+                    t.printStackTrace(System.err);
+                    return null;
+                });
+
     }
 
     public HttpServer(PandaServerBuilder builder) {
@@ -66,19 +80,21 @@ public final class HttpServer {
     }
 
 
+//    private void createConfig() {
+//
+//        XmlWebApplicationContext context = new XmlWebApplicationContext();
+//        context.setConfigLocation("classpath:/services.xml");
+//        SpringAppContextUtil.setApplicationContextHolder(context);
+//        DispatcherServlet dispatcherServlet = new DispatcherServlet();
+//        getServletContext().addServlet("dispatcherServlet",dispatcherServlet);
+//    }
 
-    private void createConfig(){
-
-        XmlWebApplicationContext context = new XmlWebApplicationContext();
-        context.setConfigLocation("classpath:/services.xml");
-        SpringAppContextUtil.setApplicationContextHolder(context);
-    }
-
-    public void start() {
-
+    public synchronized CompletionStage<HttpServer> start() {
+        channelsUpFuture.thenAccept(this::started);
+        channelsCloseFuture.whenComplete((webServer, throwable) -> shutdown(throwable));
         // Configure the server.
-        EventLoopGroup bossGroup = new NioEventLoopGroup(builder.getAcceptors());
-        EventLoopGroup workerGroup = new NioEventLoopGroup(builder.getIoWorkers());
+        bossGroup = new NioEventLoopGroup(builder.getAcceptors());
+        workerGroup = new NioEventLoopGroup(builder.getIoWorkers());
         try {
             // Configure SSL.
             final SslContext sslCtx;
@@ -99,39 +115,90 @@ public final class HttpServer {
             bootstrap.childOption(ChannelOption.SO_SNDBUF, builder.getSendBuffer());
             bootstrap.childOption(ChannelOption.SO_RCVBUF, builder.getRecvBuffer());
 
-            channel = bootstrap.bind(builder.getInetAddress(),builder.getPort()).sync().channel();
+            bootstrap.bind(builder.getPort()).addListener(channelFuture -> {
+                String name = bootstrap.toString();
+                if (!channelFuture.isSuccess()) {
+                    log.info("Channel '" + name + "' startup failed with message '"
+                            + channelFuture.cause().getMessage() + "'.");
+                    channelsUpFuture.completeExceptionally(new IllegalStateException("Channel startup failed: " + name,
+                            channelFuture.cause()));
+                    return;
+                }
 
-            log.info("Open your web browser and navigate to " +
-                    (SSL ? "https" : "http") + "://127.0.0.1:" + builder.getPort() + '/');
+                channel = ((ChannelFuture) channelFuture).channel();
+                log.info("Channel '" + name + "' started: " + channel);
 
-            channel.closeFuture().sync();
+                channel.closeFuture().addListener(future -> {
+                    log.info("Channel '" + name + "' closed: " + channel);
+                    if (channelsUpFuture.isCompletedExceptionally()) {
+                        if (future.cause() != null) {
+                            log.warn(
+                                    "Startup failure channel close failure",
+                                    new IllegalStateException(future.cause()));
+                        }
+                    } else {
+                        if (!future.isSuccess()) {
+                            channelsCloseFuture.completeExceptionally(new IllegalStateException("Channel stop failure.",
+                                    future.cause()));
+                        } else if (null == channel) {
+                            channelsCloseFuture.complete(this);
+                        }
+                        // else we're waiting for the rest of the channels to start, successful branch
+                    }
+                });
+
+                if (channelsUpFuture.isCompletedExceptionally()) {
+                    channel.close();
+                }
+
+                if (null != channel) {
+                    log.info("All channels started: ");
+                    channelsUpFuture.complete(this);
+                }
+            });
+
         } catch (Exception ex) {
             log.error("Start panda application failed, cause: " + ex.getMessage(), ex);
-        } finally {
-            bossGroup.shutdownGracefully();
-            workerGroup.shutdownGracefully();
         }
+        return startFuture;
     }
 
-    public InetSocketAddress address() {
-        Channel c = getChannel();
-        if (c instanceof SocketChannel) {
-            return ((SocketChannel) c).remoteAddress();
-        }
-        if (c instanceof ServerSocketChannel) {
-            return ((ServerSocketChannel) c).localAddress();
-        }
-        if (c instanceof DatagramChannel) {
-            InetSocketAddress a = ((DatagramChannel) c).remoteAddress();
-            return a != null ? a : ((DatagramChannel) c).localAddress();
-        }
-        throw new IllegalStateException("Does not have an InetSocketAddress");
+    private void started(HttpServer server) {
+        startFuture.complete(server);
+    }
+
+    private void shutdown(Throwable cause) {
+        bossGroup.shutdownGracefully();
+        workerGroup.shutdownGracefully();
+        shutdownFuture.complete(this);
+        log.info("shutdowned!");
     }
 
 
-    public Channel getChannel() {
-        return channel;
+    public CompletionStage<HttpServer> shutdown() {
+        if (!startFuture.isDone()) {
+            startFuture.cancel(true);
+        }
+        channel.close();
+        log.info("shutdowning!");
+        channelsCloseFuture.complete(this);
+        return shutdownFuture;
     }
+
+    public CompletionStage<HttpServer> whenShutdown() {
+        return shutdownFuture;
+    }
+
+
+    public Integer getPort() {
+        try {
+            channelsUpFuture.get();
+        } catch (Exception e) {
+            log.error("getPort error", e);
+        }
+        return builder.getPort();
+    }
+
 
     public ServletContextImpl getServletContext() {
         return ServletContextImpl.get();

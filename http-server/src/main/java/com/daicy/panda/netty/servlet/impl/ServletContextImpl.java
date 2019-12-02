@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import javax.servlet.*;
 import javax.servlet.annotation.ServletSecurity;
 import javax.servlet.descriptor.JspConfigDescriptor;
+import javax.servlet.http.HttpServlet;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.net.FileNameMap;
@@ -129,13 +130,22 @@ public class ServletContextImpl implements ServletContext {
 
     @Override
     public RequestDispatcher getRequestDispatcher(String path) {
-        return null;
+        throw new IllegalStateException(
+                "Method 'getRequestDispatcher' not yet implemented!");
     }
 
     @Override
     public RequestDispatcher getNamedDispatcher(String name) {
-        return null;
+        Map<String, Servlet> servletMap = ServletContextImpl.get().getContext().getServletMap();
+        HttpServlet servlet = null;
+        for (Map.Entry<String,Servlet> servletEntry: servletMap.entrySet()) {
+            if (servletEntry.getValue().getServletConfig().getServletName().equals(name)) {
+                servlet = (HttpServlet) servletEntry.getValue();
+            }
+        }
+        return new RequestDispatcherImpl(name, null, servlet);
     }
+
 
     @Override
     public Servlet getServlet(String name) throws ServletException {
@@ -169,12 +179,14 @@ public class ServletContextImpl implements ServletContext {
 
     @Override
     public String getRealPath(String path) {
-        return null;
+        throw new IllegalStateException(
+                "Method 'getRealPath' not yet implemented!");
     }
 
     @Override
     public String getServerInfo() {
-        return null;
+        throw new IllegalStateException(
+                "Method 'getServerInfo' not yet implemented!");
     }
 
     @Override
@@ -407,62 +419,74 @@ public class ServletContextImpl implements ServletContext {
 
     @Override
     public SessionCookieConfig getSessionCookieConfig() {
-        return null;
+        throw new IllegalStateException(
+                "Method 'getSessionCookieConfig' not yet implemented!");
     }
 
     @Override
     public void setSessionTrackingModes(Set<SessionTrackingMode> sessionTrackingModes) {
-
+        throw new IllegalStateException(
+                "Method 'setSessionTrackingModes' not yet implemented!");
     }
 
     @Override
     public Set<SessionTrackingMode> getDefaultSessionTrackingModes() {
-        return null;
+        throw new IllegalStateException(
+                "Method 'getDefaultSessionTrackingModes' not yet implemented!");
     }
 
     @Override
     public Set<SessionTrackingMode> getEffectiveSessionTrackingModes() {
-        return null;
+        throw new IllegalStateException(
+                "Method 'getEffectiveSessionTrackingModes' not yet implemented!");
     }
 
     @Override
     public void addListener(String className) {
-
+        throw new IllegalStateException(
+                "Method 'addListener' not yet implemented!");
     }
 
     @Override
     public <T extends EventListener> void addListener(T t) {
-
+        throw new IllegalStateException(
+                "Method 'addListener' not yet implemented!");
     }
 
     @Override
     public void addListener(Class<? extends EventListener> listenerClass) {
-
+        throw new IllegalStateException(
+                "Method 'addListener' not yet implemented!");
     }
 
     @Override
     public <T extends EventListener> T createListener(Class<T> clazz) throws ServletException {
-        return null;
+        throw new IllegalStateException(
+                "Method 'createListener' not yet implemented!");
     }
 
     @Override
     public JspConfigDescriptor getJspConfigDescriptor() {
-        return null;
+        throw new IllegalStateException(
+                "Method 'getJspConfigDescriptor' not yet implemented!");
     }
 
     @Override
     public ClassLoader getClassLoader() {
-        return null;
+        throw new IllegalStateException(
+                "Method 'getClassLoader' not yet implemented!");
     }
 
     @Override
     public void declareRoles(String... roleNames) {
-
+        throw new IllegalStateException(
+                "Method 'declareRoles' not yet implemented!");
     }
 
     @Override
     public String getVirtualServerName() {
-        return null;
+        throw new IllegalStateException(
+                "Method 'getVirtualServerName' not yet implemented!");
     }
 
     public PandaContext getContext() {

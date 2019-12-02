@@ -16,6 +16,12 @@ import java.util.concurrent.LinkedBlockingQueue;
  */
 @Slf4j
 public class PandaServerBuilder {
+
+    private static final String DEFAULT_SESSION_COOKIE_NAME = "JSESSIONID";
+    private static final String DEFAULT_SESSION_PARAMETER_NAME = "jsessionid";
+
+    private String sssionCookieName = StringUtils.EMPTY;
+
     private int backlog = Constant.DEFAULT_BACKLOG;
 
     private int acceptors = Constant.DEFAULT_ACCEPTOR_COUNT;
@@ -33,6 +39,8 @@ public class PandaServerBuilder {
     private int recvBuffer = Constant.DEFAULT_RECV_BUFFER_SIZE;
 
     private int maxPacketLength = Constant.DEFAULT_MAX_PACKET_LENGTH;
+
+    private int sessionTimeout = 60 * 60; // 1 hour
 
     private boolean devMode;
 
@@ -60,6 +68,12 @@ public class PandaServerBuilder {
         this.inetAddress = inetAddress;
         return this;
     }
+
+    public PandaServerBuilder sessionTimeout(int sessionTimeout) {
+        this.sessionTimeout = sessionTimeout;
+        return this;
+    }
+
 
     public PandaServerBuilder backlog(int backlog) {
         this.backlog = backlog;
@@ -128,8 +142,17 @@ public class PandaServerBuilder {
         return this;
     }
 
+    public PandaServerBuilder sssionCookieName(String sssionCookieName) {
+        this.sssionCookieName = sssionCookieName;
+        return this;
+    }
+
     public InetAddress getInetAddress() {
         return inetAddress;
+    }
+
+    public int getSessionTimeout() {
+        return sessionTimeout;
     }
 
     public int getBacklog() {
@@ -181,17 +204,24 @@ public class PandaServerBuilder {
         return maxPacketLength;
     }
 
-
-    public TracingThreadPoolExecutor executor() {
-        return this.executor;
-    }
-
     public int getPort() {
         return port;
     }
 
     public String getContextPath() {
         return contextPath;
+    }
+
+    public String getSssionCookieName() {
+        String result = sssionCookieName;
+        if (StringUtils.isEmpty(result)) {
+            result = DEFAULT_SESSION_COOKIE_NAME;
+        }
+        return result;
+    }
+
+    public TracingThreadPoolExecutor executor() {
+        return this.executor;
     }
 
     public HttpServer build() {
