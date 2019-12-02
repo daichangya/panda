@@ -22,3 +22,9 @@
 
 6.0.1
 * 添加 channelHandle 线程池
+
+6.0.2
+* add session处理逻辑
+
+6.0.3
+* add 异步处理逻辑
