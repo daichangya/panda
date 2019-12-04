@@ -20,6 +20,7 @@ import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpRequest;
+import io.netty.util.ReferenceCountUtil;
 
 import javax.servlet.ReadListener;
 import javax.servlet.ServletInputStream;
@@ -73,4 +74,16 @@ public class ServletInputStreamImpl extends ServletInputStream {
     public void setReadListener(ReadListener readListener) {
 
     }
+
+    private boolean close = false;
+
+    @Override
+    public void close() {
+        if (close) {
+            return;
+        }
+        close = true;
+        ReferenceCountUtil.release(in);
+    }
+
 }

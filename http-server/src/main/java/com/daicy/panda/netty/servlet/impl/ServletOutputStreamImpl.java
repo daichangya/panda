@@ -17,7 +17,9 @@
 package com.daicy.panda.netty.servlet.impl;
 
 import io.netty.buffer.ByteBufOutputStream;
-import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.*;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.WriteListener;
@@ -25,15 +27,15 @@ import java.io.IOException;
 
 public class ServletOutputStreamImpl extends ServletOutputStream {
 
-    private FullHttpResponse response;
+    private ServletResponseImpl servletResponse;
 
     private ByteBufOutputStream out;
 
     private boolean flushed = false;
 
-    public ServletOutputStreamImpl(FullHttpResponse response) {
-        this.response = response;
-        this.out = new ByteBufOutputStream(response.content());
+    public ServletOutputStreamImpl(ServletResponseImpl response) {
+        this.servletResponse = response;
+        this.out = new ByteBufOutputStream(Unpooled.buffer(0));
     }
 
     @Override
@@ -52,9 +54,46 @@ public class ServletOutputStreamImpl extends ServletOutputStream {
     }
 
     @Override
-    public void flush() throws IOException {
+    public void flush() {
 //        this.response.setContent(out.buffer());
-        this.flushed = true;
+//        servletResponse.getCtx().writeAndFlush(out.buffer().copy());
+//        resetBuffer();
+        boolean chunked = HttpUtil.isTransferEncodingChunked(servletResponse.getOriginalResponse());
+        ChannelHandlerContext ctx = servletResponse.getCtx();
+        if (chunked && ctx.channel().isActive()) {
+            if (!flushed) {
+                ctx.writeAndFlush(servletResponse.getOriginalResponse());
+            }
+            if (out.buffer().writerIndex() > out.buffer().readerIndex()) {
+                ctx.writeAndFlush((new DefaultHttpContent(out.buffer().copy())));
+                resetBuffer();
+            }
+            this.flushed = true;
+        }
+    }
+
+    private boolean close = false;
+
+    @Override
+    public void close() {
+        if (close) {
+            return;
+        }
+        close = true;
+        boolean chunked = HttpUtil.isTransferEncodingChunked(servletResponse.getOriginalResponse());
+        ChannelHandlerContext ctx = servletResponse.getCtx();
+        if (!chunked) {
+            // 设置content-length头
+            if (!HttpUtil.isContentLengthSet(servletResponse.getOriginalResponse())) {
+                HttpUtil.setContentLength(servletResponse.getOriginalResponse(), this.out.buffer().readableBytes());
+            }
+            if (ctx.channel().isActive()) {
+                ctx.writeAndFlush(servletResponse.getOriginalResponse());
+            }
+        }
+        if (out.buffer().writerIndex() > out.buffer().readerIndex() && ctx.channel().isActive()) {
+            ctx.writeAndFlush((new DefaultHttpContent(out.buffer())));
+        }
     }
 
     public void resetBuffer() {

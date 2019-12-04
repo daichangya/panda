@@ -71,8 +71,16 @@ public class AsyncContextImpl implements AsyncContext {
         Runnable runnable = new Runnable() {
             @Override
             public void run() {
-                NettyServletHandler.handleRequest(request, response);
-                complete();
+                ServletRequestImpl servletRequestImpl = (ServletRequestImpl) request;
+                ServletResponseImpl servletResponseImpl = (ServletResponseImpl) response;
+                try {
+                    NettyServletHandler.handleRequest0(servletRequestImpl, servletResponseImpl);
+                    complete();
+                } finally {
+                    if (!servletRequestImpl.isAsyncStarted()) {
+                        servletResponseImpl.close();
+                    }
+                }
             }
         };
         start(runnable);

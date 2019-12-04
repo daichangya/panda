@@ -21,6 +21,8 @@ import com.daicy.panda.netty.servlet.impl.ServletResponseImpl;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.http.*;
+import io.netty.handler.timeout.IdleStateEvent;
+import io.netty.util.ReferenceCountUtil;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -57,15 +59,27 @@ public class HttpServerHandler extends ChannelInboundHandlerAdapter {
                 if (HttpUtil.is100ContinueExpected(request)) { //请求头包含Expect: 100-continue
                     ctx.write(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.CONTINUE), ctx.voidPromise());
                 }
-                FullHttpResponse response = new DefaultFullHttpResponse(request.protocolVersion(), HttpResponseStatus.OK);
+                DefaultHttpResponse response = new DefaultHttpResponse(request.protocolVersion(), HttpResponseStatus.OK);
                 HttpUtil.setKeepAlive(response, HttpUtil.isKeepAlive(request));
                 ServletRequestImpl servletRequest = new ServletRequestImpl(ctx, request);
                 ServletResponseImpl servletResponse = new ServletResponseImpl(ctx, response);
                 NettyServletHandler.handleRequest(servletRequest, servletResponse);
             }
         } finally {
+            ReferenceCountUtil.release(msg);
             status.handledRequestsIncrement();
         }
+    }
+
+    @Override
+    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+        if (evt instanceof IdleStateEvent) {
+            IdleStateEvent e = (IdleStateEvent) evt;
+            if (e == IdleStateEvent.READER_IDLE_STATE_EVENT) {
+                ctx.channel().close();
+            }
+        }
+        super.userEventTriggered(ctx, evt);
     }
 
     @Override

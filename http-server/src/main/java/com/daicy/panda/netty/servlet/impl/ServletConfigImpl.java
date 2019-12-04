@@ -70,4 +70,7 @@ public class ServletConfigImpl implements ServletConfig {
         return true;
     }
 
+    public Map<String, String> getInitParameters() {
+        return initParameters;
+    }
 }

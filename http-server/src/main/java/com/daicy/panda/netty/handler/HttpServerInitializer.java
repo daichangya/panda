@@ -23,6 +23,7 @@ import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.stream.ChunkedWriteHandler;
+import io.netty.handler.timeout.IdleStateHandler;
 
 public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
 
@@ -41,12 +42,13 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
         pipeline.addLast(new HttpServerCodec(4096, 8192, 8192, false));
         // Uncomment the following line if you don't want to handle HttpChunks.
         pipeline.addLast(new HttpObjectAggregator(100 * 1024));
-//        pipeline.addLast(new ChunkedWriteHandler());
+        pipeline.addLast(new ChunkedWriteHandler());
 //        pipeline.addLast(new HttpStaticFileServerHandler());
 
 //        pipeline.addLast(new HttpResponseEncoder());
         // Remove the following line if you don't want automatic content compression.
         //pipeline.addLast(new HttpContentCompressor());
+        pipeline.addLast(new IdleStateHandler(5, 0, 0));
         pipeline.addLast(new HttpServerHandler());
     }
 }

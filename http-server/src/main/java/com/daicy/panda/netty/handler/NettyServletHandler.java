@@ -1,10 +1,9 @@
 package com.daicy.panda.netty.handler;
 
-import com.daicy.panda.netty.servlet.impl.ServletContextImpl;
-import com.daicy.panda.netty.servlet.impl.ServletRequestImpl;
-import com.daicy.panda.netty.servlet.impl.ServletResponseImpl;
+import com.daicy.panda.netty.servlet.impl.*;
 import com.daicy.panda.netty.servlet.impl.filter.FilterChainFactory;
 import com.daicy.panda.netty.servlet.impl.filter.FilterChainImpl;
+import io.netty.util.ReferenceCountUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.web.servlet.DispatcherServletAutoConfiguration;
 
@@ -12,6 +11,7 @@ import javax.servlet.Servlet;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 /**
  * @author: create by daichangya
@@ -24,7 +24,20 @@ public class NettyServletHandler {
 
 
     public static void handleRequest(ServletRequest servletRequest, ServletResponse servletResponse) {
-        handleRequest0(servletRequest, servletResponse);
+        ServletRequestImpl servletRequestImpl = (ServletRequestImpl) servletRequest;
+        ServletResponseImpl servletResponseImpl = (ServletResponseImpl) servletResponse;
+        try {
+            handleRequest0(servletRequestImpl, servletResponseImpl);
+        } finally {
+            try {
+                servletRequestImpl.getInputStream().close();
+            } catch (IOException e) {
+                log.error("handleRequest error", e);
+            }
+            if (!servletRequest.isAsyncStarted()) {
+                servletResponseImpl.close();
+            }
+        }
 //        TracingThreadPoolExecutor asyncExecutor = ServletContextImpl.get().getPandaServerBuilder().executor();
 //        if (asyncExecutor == null) {
 //            handleRequest0(servletRequest, servletResponse);
@@ -36,24 +49,22 @@ public class NettyServletHandler {
 //        });
     }
 
-    private static void handleRequest0(ServletRequest servletRequest, ServletResponse servletResponse) {
-        ServletRequestImpl servletRequestImpl = (ServletRequestImpl) servletRequest;
-        ServletResponseImpl servletResponseImpl = (ServletResponseImpl) servletResponse;
+    public static void handleRequest0(ServletRequestImpl servletRequestImpl, ServletResponseImpl servletResponseImpl) {
         try {
-            Servlet servlet = ServletContextImpl.get().getServlet(DispatcherServletAutoConfiguration.DEFAULT_DISPATCHER_SERVLET_BEAN_NAME);
-            FilterChainImpl chain = FilterChainFactory.createFilterChain(servletRequestImpl, servlet);
-            chain.doFilter(servletRequest, servletResponse);
-            if (servletResponseImpl.getStatus() == HttpServletResponse.SC_OK) {
-                servlet.service(servletRequest, servletResponse);
+            RequestDispatcherImpl dispatcher = (RequestDispatcherImpl) ServletContextImpl.get().getRequestDispatcher(servletRequestImpl.getRequestURI());
+            if (dispatcher == null) {
+                servletResponseImpl.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                return;
             }
+            dispatcher.dispatch(servletRequestImpl, servletResponseImpl);
+//            Servlet servlet = ServletContextImpl.get().getServlet(DispatcherServletAutoConfiguration.DEFAULT_DISPATCHER_SERVLET_BEAN_NAME);
+//            FilterChainImpl chain = FilterChainFactory.createFilterChain(servletRequestImpl, servlet);
+//            chain.doFilter(servletRequest, servletResponse);
+//            if (servletResponseImpl.getStatus() == HttpServletResponse.SC_OK) {
+//                servlet.service(servletRequest, servletResponse);
+//            }
         } catch (Exception e) {
             log.error("controller invoke uri:{}", servletRequestImpl.getRequestURI(), e);
-        } finally {
-            if (!servletRequest.isAsyncStarted()) {
-                servletResponseImpl.close();
-            }
         }
     }
-
-
 }

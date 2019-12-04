@@ -1,12 +1,9 @@
 package com.daicy.panda.netty.servlet.impl;
 
-import javax.servlet.MultipartConfigElement;
-import javax.servlet.Servlet;
-import javax.servlet.ServletRegistration;
-import javax.servlet.ServletSecurityElement;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Set;
+import lombok.extern.slf4j.Slf4j;
+
+import javax.servlet.*;
+import java.util.*;
 
 /**
  * @author: create by daichangya
@@ -14,6 +11,7 @@ import java.util.Set;
  * @description: com.daicy.panda.netty.servlet.impl
  * @date:19-11-12
  */
+@Slf4j
 public class ServletRegistrationImpl implements ServletRegistration.Dynamic {
 
     private final Servlet servlet;
@@ -47,19 +45,28 @@ public class ServletRegistrationImpl implements ServletRegistration.Dynamic {
 
     }
 
+    protected boolean asyncSupported;
+
     @Override
     public void setAsyncSupported(boolean isAsyncSupported) {
-
+        this.asyncSupported = isAsyncSupported;
     }
+
+    private Collection<String> urlPatternMappings = new LinkedList<>();
 
     @Override
     public Set<String> addMapping(String... urlPatterns) {
-        return null;
+        ServletContextImpl context = ServletContextImpl.get();
+        for (String urlPattern : urlPatterns) {
+            context.addServletMapping(urlPattern, getName());
+        }
+        urlPatternMappings.addAll(Arrays.asList(urlPatterns));
+        return new HashSet<>(urlPatternMappings);
     }
 
     @Override
     public Collection<String> getMappings() {
-        return null;
+        return urlPatternMappings;
     }
 
     @Override
@@ -69,31 +76,44 @@ public class ServletRegistrationImpl implements ServletRegistration.Dynamic {
 
     @Override
     public String getName() {
-        return null;
+        return servlet.getServletConfig().getServletName();
     }
 
     @Override
     public String getClassName() {
-        return null;
+        return servlet.getClass().getName();
     }
 
     @Override
     public boolean setInitParameter(String name, String value) {
-        return false;
+        ServletConfigImpl servletConfig = (ServletConfigImpl) servlet.getServletConfig();
+        return servletConfig.setInitParameter(name, value);
     }
 
     @Override
     public String getInitParameter(String name) {
-        return null;
+        return servlet.getServletConfig().getInitParameter(name);
     }
 
     @Override
     public Set<String> setInitParameters(Map<String, String> initParameters) {
-        return null;
+        if (null == initParameters) {
+            return null;
+        }
+        Set<String> result = new HashSet<>();
+        ServletConfigImpl servletConfig = (ServletConfigImpl) servlet.getServletConfig();
+        for (String key : initParameters.keySet()) {
+            boolean success = servletConfig.setInitParameter(key, initParameters.get(key));
+            if (success) {
+                result.add(key);
+            }
+        }
+        return result;
     }
 
     @Override
     public Map<String, String> getInitParameters() {
-        return null;
+        ServletConfigImpl servletConfig = (ServletConfigImpl) servlet.getServletConfig();
+        return servletConfig.getInitParameters();
     }
 }
