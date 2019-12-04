@@ -22,6 +22,8 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.*;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 /**
  * @author: create by daichangya
  * @version: v1.0
@@ -51,6 +53,8 @@ public class ServletContextImpl implements ServletContext {
     private String contextPath = "";
 
     private final SevletFactory sevletFactory;
+
+    private final Map<String, String> servletMappings = new HashMap<>();
 
     private ServletContextImpl(PandaContext context) {
         this.context = context;
@@ -128,17 +132,27 @@ public class ServletContextImpl implements ServletContext {
         return ServletContextImpl.class.getResourceAsStream(path);
     }
 
+    public void addServletMapping(String urlPattern, String name) {
+        servletMappings.put(urlPattern, checkNotNull(name));
+    }
+
     @Override
     public RequestDispatcher getRequestDispatcher(String path) {
-        throw new IllegalStateException(
-                "Method 'getRequestDispatcher' not yet implemented!");
+        String servletName = servletMappings.get(path);
+        if (servletName == null) {
+            servletName = servletMappings.get("/");
+        }
+        if (null == servletName) {
+            return null;
+        }
+        return getNamedDispatcher(servletName);
     }
 
     @Override
     public RequestDispatcher getNamedDispatcher(String name) {
         Map<String, Servlet> servletMap = ServletContextImpl.get().getContext().getServletMap();
         HttpServlet servlet = null;
-        for (Map.Entry<String,Servlet> servletEntry: servletMap.entrySet()) {
+        for (Map.Entry<String, Servlet> servletEntry : servletMap.entrySet()) {
             if (servletEntry.getValue().getServletConfig().getServletName().equals(name)) {
                 servlet = (HttpServlet) servletEntry.getValue();
             }
@@ -407,8 +421,8 @@ public class ServletContextImpl implements ServletContext {
     public Map<String, ? extends FilterRegistration> getFilterRegistrations() {
         Map<String, FilterRegistrationImpl> result = new HashMap<>();
 
-        FilterDef[] filterDefs = (FilterDef[]) context.getFilterDefMap().values().toArray();
-        for (FilterDef filterDef : filterDefs) {
+        Map<String, FilterDef> filterDefMaps = context.getFilterDefMap();
+        for (FilterDef filterDef : filterDefMaps.values()) {
             result.put(filterDef.getFilterName(),
                     new FilterRegistrationImpl(filterDef, context));
         }

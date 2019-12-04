@@ -1,9 +1,9 @@
 package com.daicy.panda.netty.servlet.impl;
 
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
+import com.daicy.panda.netty.servlet.impl.filter.FilterChainFactory;
+import com.daicy.panda.netty.servlet.impl.filter.FilterChainImpl;
+
+import javax.servlet.*;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -54,6 +54,16 @@ public class RequestDispatcherImpl implements RequestDispatcher {
             httpServlet.service(servletRequest, servletResponse);
         } else {
             ((HttpServletResponse) servletResponse).sendError(HttpServletResponse.SC_NOT_FOUND);
+        }
+    }
+
+    public void dispatch(ServletRequest servletRequest, ServletResponse servletResponse) throws ServletException, IOException {
+        ServletRequestImpl servletRequestImpl = (ServletRequestImpl) servletRequest;
+        ServletResponseImpl servletResponseImpl = (ServletResponseImpl) servletResponse;
+        FilterChainImpl chain = FilterChainFactory.createFilterChain(servletRequestImpl, httpServlet);
+        chain.doFilter(servletRequest, servletResponse);
+        if (servletResponseImpl.getStatus() == HttpServletResponse.SC_OK) {
+            httpServlet.service(servletRequest, servletResponse);
         }
     }
 }

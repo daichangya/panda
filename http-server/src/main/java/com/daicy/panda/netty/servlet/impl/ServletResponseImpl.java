@@ -30,7 +30,7 @@ import java.util.Locale;
 @Slf4j
 public class ServletResponseImpl implements HttpServletResponse {
 
-    private final FullHttpResponse originalResponse;
+    private final DefaultHttpResponse originalResponse;
 
     private ServletOutputStreamImpl servletOutputStream;
 
@@ -40,10 +40,10 @@ public class ServletResponseImpl implements HttpServletResponse {
 
     private boolean responseCommited = false;
 
-    public ServletResponseImpl(ChannelHandlerContext ctx, FullHttpResponse originalResponse) {
+    public ServletResponseImpl(ChannelHandlerContext ctx, DefaultHttpResponse originalResponse) {
         this.ctx = ctx;
         this.originalResponse = originalResponse;
-        this.servletOutputStream = new ServletOutputStreamImpl(originalResponse);
+        this.servletOutputStream = new ServletOutputStreamImpl(this);
         this.printWriter = new PrintWriter(servletOutputStream);
     }
 
@@ -208,18 +208,17 @@ public class ServletResponseImpl implements HttpServletResponse {
 
     @Override
     public void setBufferSize(int size) {
-
     }
 
+    private boolean flush = false;
+
     @Override
-    public void flushBuffer() throws IOException {
-        this.getWriter().flush();
+    public void flushBuffer() {
+        this.servletOutputStream.flush();
 //        boolean isKeepAlive = HttpUtil.isKeepAlive(originalResponse);
 //        if (isKeepAlive) {
-//            setContentLength(this.getOutputStream().getBufferSize());
+//            setContentLength(originalResponse.content().readableBytes());
 //        }
-//        ctx.channel().writeAndFlush(originalResponse);
-        this.responseCommited = true;
     }
 
     @Override
@@ -261,14 +260,22 @@ public class ServletResponseImpl implements HttpServletResponse {
 
 
     public void close() {
-        boolean isKeepAlive = HttpUtil.isKeepAlive(originalResponse);
         this.responseCommited = true;
-        if (isKeepAlive) {
-            setContentLength(originalResponse.content().readableBytes());
+        servletOutputStream.close();
+        boolean isKeepAlive = HttpUtil.isKeepAlive(originalResponse);
+        if(ctx.channel().isActive()){
+            ChannelFuture channelFuture = ctx.write(DefaultLastHttpContent.EMPTY_LAST_CONTENT);
+            if (!isKeepAlive && channelFuture != null) {
+                channelFuture.addListener(ChannelFutureListener.CLOSE);
+            }
         }
-        ChannelFuture channelFuture = ctx.channel().writeAndFlush(originalResponse);
-        if (!isKeepAlive && channelFuture != null) {
-            channelFuture.addListener(ChannelFutureListener.CLOSE);
-        }
+    }
+
+    public DefaultHttpResponse getOriginalResponse() {
+        return originalResponse;
+    }
+
+    public ChannelHandlerContext getCtx() {
+        return ctx;
     }
 }
