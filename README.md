@@ -27,3 +27,6 @@
 
 6.0.3
 * add 异步处理逻辑
+
+6.0.4
+* add http stream event chunked
