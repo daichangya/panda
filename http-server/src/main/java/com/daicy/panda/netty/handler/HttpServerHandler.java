@@ -22,6 +22,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.timeout.IdleStateEvent;
+import io.netty.util.ReferenceCountUtil;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -65,6 +66,7 @@ public class HttpServerHandler extends ChannelInboundHandlerAdapter {
                 NettyServletHandler.handleRequest(servletRequest, servletResponse);
             }
         } finally {
+            ReferenceCountUtil.release(msg);
             status.handledRequestsIncrement();
         }
     }

@@ -19,8 +19,7 @@ package com.daicy.panda.netty.servlet.impl;
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.http.DefaultHttpContent;
-import io.netty.handler.codec.http.HttpUtil;
+import io.netty.handler.codec.http.*;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.WriteListener;
@@ -31,8 +30,6 @@ public class ServletOutputStreamImpl extends ServletOutputStream {
     private ServletResponseImpl servletResponse;
 
     private ByteBufOutputStream out;
-
-    private int totalLength;//内容总长度
 
     private boolean flushed = false;
 
@@ -63,20 +60,26 @@ public class ServletOutputStreamImpl extends ServletOutputStream {
 //        resetBuffer();
         boolean chunked = HttpUtil.isTransferEncodingChunked(servletResponse.getOriginalResponse());
         ChannelHandlerContext ctx = servletResponse.getCtx();
-        if (chunked) {
-            if (!flushed && ctx.channel().isActive()) {
-                servletResponse.getCtx().writeAndFlush(servletResponse.getOriginalResponse());
+        if (chunked && ctx.channel().isActive()) {
+            if (!flushed) {
+                ctx.writeAndFlush(servletResponse.getOriginalResponse());
             }
-            if (out.buffer().writerIndex() > out.buffer().readerIndex() && ctx.channel().isActive()) {
-                servletResponse.getCtx().writeAndFlush((new DefaultHttpContent(out.buffer().copy())));
+            if (out.buffer().writerIndex() > out.buffer().readerIndex()) {
+                ctx.writeAndFlush((new DefaultHttpContent(out.buffer().copy())));
                 resetBuffer();
             }
             this.flushed = true;
         }
     }
 
+    private boolean close = false;
+
     @Override
     public void close() {
+        if (close) {
+            return;
+        }
+        close = true;
         boolean chunked = HttpUtil.isTransferEncodingChunked(servletResponse.getOriginalResponse());
         ChannelHandlerContext ctx = servletResponse.getCtx();
         if (!chunked) {

@@ -1,11 +1,9 @@
 package com.daicy.panda.netty.handler;
 
-import com.daicy.panda.netty.servlet.impl.RequestDispatcherImpl;
-import com.daicy.panda.netty.servlet.impl.ServletContextImpl;
-import com.daicy.panda.netty.servlet.impl.ServletRequestImpl;
-import com.daicy.panda.netty.servlet.impl.ServletResponseImpl;
+import com.daicy.panda.netty.servlet.impl.*;
 import com.daicy.panda.netty.servlet.impl.filter.FilterChainFactory;
 import com.daicy.panda.netty.servlet.impl.filter.FilterChainImpl;
+import io.netty.util.ReferenceCountUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.web.servlet.DispatcherServletAutoConfiguration;
 
@@ -13,6 +11,7 @@ import javax.servlet.Servlet;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 /**
  * @author: create by daichangya
@@ -30,6 +29,11 @@ public class NettyServletHandler {
         try {
             handleRequest0(servletRequestImpl, servletResponseImpl);
         } finally {
+            try {
+                servletRequestImpl.getInputStream().close();
+            } catch (IOException e) {
+                log.error("handleRequest error", e);
+            }
             if (!servletRequest.isAsyncStarted()) {
                 servletResponseImpl.close();
             }
