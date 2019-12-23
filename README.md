@@ -1,6 +1,6 @@
 # panda
 1.0
-一个简单的Http Server
+* 一个简单的Http Server
 
 2.0 
 * 通讯模型改为netty
