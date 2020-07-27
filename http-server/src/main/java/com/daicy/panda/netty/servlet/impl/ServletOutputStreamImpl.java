@@ -18,12 +18,17 @@ package com.daicy.panda.netty.servlet.impl;
 
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.*;
+import io.netty.handler.stream.ChunkedFile;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.WriteListener;
 import java.io.IOException;
+
+import static io.netty.handler.codec.http.HttpHeaders.Names.TRANSFER_ENCODING;
+import static io.netty.handler.codec.http.HttpHeaders.Values.CHUNKED;
 
 public class ServletOutputStreamImpl extends ServletOutputStream {
 
@@ -58,12 +63,14 @@ public class ServletOutputStreamImpl extends ServletOutputStream {
 //        this.response.setContent(out.buffer());
 //        servletResponse.getCtx().writeAndFlush(out.buffer().copy());
 //        resetBuffer();
-        boolean chunked = HttpUtil.isTransferEncodingChunked(servletResponse.getOriginalResponse());
+        long contentLength = HttpUtil.getContentLength(servletResponse.getOriginalResponse());
         ChannelHandlerContext ctx = servletResponse.getCtx();
-        if (chunked && ctx.channel().isActive()) {
+        if (contentLength == -1 && ctx.channel().isActive()){
             if (!flushed) {
+                servletResponse.setHeader(TRANSFER_ENCODING, CHUNKED);
                 ctx.writeAndFlush(servletResponse.getOriginalResponse());
             }
+
             if (out.buffer().writerIndex() > out.buffer().readerIndex()) {
                 ctx.writeAndFlush((new DefaultHttpContent(out.buffer().copy())));
                 resetBuffer();
