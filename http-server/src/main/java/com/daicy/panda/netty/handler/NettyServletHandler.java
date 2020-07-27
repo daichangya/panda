@@ -3,6 +3,7 @@ package com.daicy.panda.netty.handler;
 import com.daicy.panda.netty.servlet.impl.*;
 import com.daicy.panda.netty.servlet.impl.filter.FilterChainFactory;
 import com.daicy.panda.netty.servlet.impl.filter.FilterChainImpl;
+import io.netty.handler.codec.http.HttpUtil;
 import io.netty.util.ReferenceCountUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.web.servlet.DispatcherServletAutoConfiguration;
@@ -29,14 +30,7 @@ public class NettyServletHandler {
         try {
             handleRequest0(servletRequestImpl, servletResponseImpl);
         } finally {
-            try {
-                servletRequestImpl.getInputStream().close();
-            } catch (IOException e) {
-                log.error("handleRequest error", e);
-            }
-            if (!servletRequest.isAsyncStarted()) {
-                servletResponseImpl.close();
-            }
+
         }
 //        TracingThreadPoolExecutor asyncExecutor = ServletContextImpl.get().getPandaServerBuilder().executor();
 //        if (asyncExecutor == null) {

@@ -24,6 +24,9 @@ import io.netty.handler.codec.http.*;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.util.ReferenceCountUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.BooleanUtils;
+
+import java.io.IOException;
 
 @Slf4j
 public class HttpServerHandler extends ChannelInboundHandlerAdapter {
@@ -56,14 +59,30 @@ public class HttpServerHandler extends ChannelInboundHandlerAdapter {
         try {
             if (msg instanceof FullHttpRequest) {
                 FullHttpRequest request = (FullHttpRequest) msg;
-                if (HttpUtil.is100ContinueExpected(request)) { //请求头包含Expect: 100-continue
-                    ctx.write(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.CONTINUE), ctx.voidPromise());
+                Boolean isKeepAlive = HttpUtil.isKeepAlive(request);
+                ServletRequestImpl servletRequest = null;
+                ServletResponseImpl servletResponse = null;
+                try {
+                    if (HttpUtil.is100ContinueExpected(request)) { //请求头包含Expect: 100-continue
+                        ctx.write(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.CONTINUE), ctx.voidPromise());
+                    }
+                    DefaultHttpResponse response = new DefaultHttpResponse(request.protocolVersion(), HttpResponseStatus.OK);
+                    HttpUtil.setKeepAlive(response, isKeepAlive);
+                    servletRequest = new ServletRequestImpl(ctx, request);
+                    servletResponse = new ServletResponseImpl(ctx, response);
+                    NettyServletHandler.handleRequest(servletRequest, servletResponse);
+                }finally {
+                    try {
+                        if(BooleanUtils.isNotTrue(isKeepAlive) && null != servletRequest){
+                            servletRequest.getInputStream().close();
+                        }
+                    } catch (IOException e) {
+                        log.error("handleRequest error", e);
+                    }
+                    if (!servletRequest.isAsyncStarted() && null != servletResponse) {
+                        servletResponse.close();
+                    }
                 }
-                DefaultHttpResponse response = new DefaultHttpResponse(request.protocolVersion(), HttpResponseStatus.OK);
-                HttpUtil.setKeepAlive(response, HttpUtil.isKeepAlive(request));
-                ServletRequestImpl servletRequest = new ServletRequestImpl(ctx, request);
-                ServletResponseImpl servletResponse = new ServletResponseImpl(ctx, response);
-                NettyServletHandler.handleRequest(servletRequest, servletResponse);
             }
         } finally {
             ReferenceCountUtil.release(msg);
