@@ -21,7 +21,7 @@
 		<revision>6.0.5-SNAPSHOT</revision>
 		<maven-compiler-plugin.version>3.7.0</maven-compiler-plugin.version>
 		<lombok.version>1.18.8</lombok.version>
-		<commons-io.version>2.0.1</commons-io.version>
+		<commons-io.version>2.7</commons-io.version>
 		<guava.version>20.0</guava.version>
 		<netty.version>4.1.43.Final</netty.version>
 	</properties>
