@@ -43,7 +43,7 @@ public class NettyWebServer implements WebServer {
     public void start() throws WebServerException {
         httpServer.start()
                 .thenAccept(ws -> {
-                    System.out.println(
+                    logger.info(
                             "Netty server is up! http://localhost:" + ws.getPort());
                     ws.whenShutdown().thenRun(()
                             -> System.out.println("Netty server is DOWN. Good bye!"));
