@@ -1,4 +1,7 @@
-# panda
+# panda 一个HTTP 服务器
+0.1
+* http协议
+
 1.0
 * 一个简单的Http Server
 
