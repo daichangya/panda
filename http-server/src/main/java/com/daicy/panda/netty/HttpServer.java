@@ -155,6 +155,15 @@ public final class HttpServer {
                     log.info("All channels started: ");
                     channelsUpFuture.complete(this);
                 }
+                log.info(
+                        "(  ____ )(  ___  )( (    /|(  __  \\ (  ___  )\n" +
+                        "| (    )|| (   ) ||  \\  ( || (  \\  )| (   ) |\n" +
+                        "| (____)|| (___) ||   \\ | || |   ) || (___) |\n" +
+                        "|  _____)|  ___  || (\\ \\) || |   | ||  ___  |\n" +
+                        "| (      | (   ) || | \\   || |   ) || (   ) |\n" +
+                        "| )      | )   ( || )  \\  || (__/  )| )   ( |\n" +
+                        "|/       |/     \\||/    )_)(______/ |/     \\|\n"
+                        + "Panda Netty server is up! http://localhost:" + builder.getPort());
             });
 
         } catch (Exception ex) {
