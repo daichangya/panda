@@ -1,4 +1,4 @@
-# panda 一个HTTP 服务器
+# panda 一个 基于Netty的Java Web服务器
 0.1
 * http协议
 
