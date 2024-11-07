@@ -7,6 +7,5 @@
         <version>6.0.5-SNAPSHOT</version>
     </parent>
     <artifactId>mini-tomcat</artifactId>
-    <name>Archetype - mini-tomcat</name>
-    <url>http://maven.apache.org</url>
+    <name>MiniTomcat</name>
 </project>
